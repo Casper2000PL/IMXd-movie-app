@@ -29,12 +29,21 @@
     "noUncheckedIndexedAccess": true,
     "experimentalDecorators": true,
 
-    // Output control
+    // Output control - CRITICAL: Disable output for root config
     "skipLibCheck": true,
+    "noEmit": true, // Added this to prevent output
 
     // Optional strict flags (disabled by default)
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
-  }
+  },
+  // Don't include any files at root level
+  "files": [],
+  "include": [],
+  "references": [
+    { "path": "./client" },
+    { "path": "./server" },
+    { "path": "./shared" }
+  ]
 }
