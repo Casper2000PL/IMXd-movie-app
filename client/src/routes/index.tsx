@@ -5,5 +5,9 @@ export const Route = createFileRoute("/")({
 });
 
 function RouteComponent() {
-  return <div>Hello "/"! Index (main route)</div>;
+  return (
+    <div className="flex h-svh w-full bg-black">
+      <p className="text-2xl text-white">Hello "/"! Index (main route)!</p>
+    </div>
+  );
 }

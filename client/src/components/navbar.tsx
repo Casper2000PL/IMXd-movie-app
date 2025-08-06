@@ -7,9 +7,12 @@ import {
 import NavButton from "./nav-button";
 import { ChevronDownIcon, CircleUserRoundIcon } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { authClient } from "@/lib/auth-client";
 
-const Navbar = () => {
-  const user = "";
+const Navbar = async () => {
+  const { data: session } = await authClient.useSession();
+  const isLoggedIn = !!session;
+  console.log("isLoggedIn: ", isLoggedIn);
 
   return (
     <div className="flex h-14 w-full items-center justify-between bg-gray-900 px-4">
@@ -29,12 +32,12 @@ const Navbar = () => {
           </div>
         </Link>
 
-        {user ? (
+        {isLoggedIn ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <NavButton>
                 <CircleUserRoundIcon className="size-6" />
-                Username
+                {session.user.name}
                 <ChevronDownIcon className="size-4" />
               </NavButton>
             </DropdownMenuTrigger>
@@ -60,15 +63,25 @@ const Navbar = () => {
               <DropdownMenuItem className="py-2.5 pl-4 text-base hover:bg-white/15! hover:text-white!">
                 Account Settings
               </DropdownMenuItem>
-              <DropdownMenuItem className="py-2.5 pl-4 text-base hover:bg-white/15! hover:text-white!">
-                Sign out
+              <DropdownMenuItem
+                className="py-2.5 pl-4 text-base hover:bg-white/15! hover:text-white!"
+                asChild
+              >
+                <button onClick={() => authClient.signOut()} className="w-full">
+                  Sign out
+                </button>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Link to="/sign-in">
-            <NavButton>Sign In</NavButton>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link to="/sign-in">
+              <NavButton>Sign In</NavButton>
+            </Link>
+            <Link to="/sign-up">
+              <NavButton>Sign Up</NavButton>
+            </Link>
+          </div>
         )}
       </div>
     </div>
