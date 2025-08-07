@@ -2,13 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -20,20 +14,24 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-import { createAuthClient } from "better-auth/react";
-import { z } from "zod";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { z } from "zod";
+import { signIn } from "@/lib/auth-client";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   email: z.email(),
-  password: z.string().min(8),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
 });
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  // 1. Define your form.
+  const [isLoading, setIsLoading] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -42,77 +40,63 @@ export function LoginForm({
     },
   });
 
-  // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof formSchema>) {
     console.log("Form submitted with values:", values);
 
-    const { data, error } = await authClient.signIn.email({
-      email: values.email,
-      password: values.password,
-      callbackURL: "/",
-    });
+    await signIn.email(
+      {
+        email: values.email,
+        password: values.password,
+        callbackURL: "/",
+      },
+      {
+        onRequest: () => setIsLoading(true),
+        onSuccess: (ctx) => {
+          console.log("Signed in successfully: ", ctx.data);
+        },
+        onError: (ctx) => {
+          console.error("Sign in failed:", ctx.error);
 
-    if (error) {
-      console.error("Sign-in failed:", error);
-      toast("Sign-in failed", {
-        description: error.message as string,
-        duration: 1500,
-        icon: "❌",
-      });
-    } else {
-      console.log("Sign-in successful:", data);
-      toast("Signed in successfully", {
-        duration: 1500,
-        icon: "✅",
-      });
-    }
+          setIsLoading(false);
+
+          toast("Sign in failed", {
+            description: ctx.error.message as string,
+            duration: 1500,
+            icon: "❌",
+          });
+        },
+      },
+    );
 
     form.reset();
   }
 
-  const authClient = createAuthClient();
-
-  const signInWithGoogle = async () => {
-    await authClient.signIn.social({
-      provider: "google",
-      callbackURL: "/dashboard",
-    });
-  };
-
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-xl">Welcome to IMXd</CardTitle>
-          <CardDescription>
-            Login with your email or Google account
-          </CardDescription>
+      <Card className="shadow-xl">
+        <CardHeader className="flex w-full flex-col items-center justify-between gap-5">
+          <Link to="/">
+            <div className="bg-custom-yellow-100 flex h-8 w-16 items-center justify-center rounded-sm">
+              <p
+                className="font-impact text-lg font-normal tracking-wide text-black"
+                style={{
+                  transform: "scaleY(1.25) scaleX(1.25)",
+                  alignContent: "center",
+                }}
+              >
+                IMXd
+              </p>
+            </div>
+          </Link>
+          <CardTitle className="text-xl">Welcome back</CardTitle>
+          <p className="text-muted-foreground text-center text-sm">
+            Enter your credentials to access your account.
+          </p>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <div className="grid gap-6">
-                <div className="flex flex-col gap-4">
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    type="button"
-                    onClick={signInWithGoogle}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                      <path
-                        d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
-                        fill="currentColor"
-                      />
-                    </svg>
-                    Login with Google
-                  </Button>
-                </div>
-                <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-                  <span className="bg-card text-muted-foreground relative z-10 px-2">
-                    Or continue with
-                  </span>
-                </div>
                 <div className="grid gap-6">
                   <div className="grid gap-3">
                     <FormField
@@ -156,15 +140,19 @@ export function LoginForm({
                       </a>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full">
-                    Login
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      "Sign in"
+                    )}
                   </Button>
                 </div>
                 <div className="text-center text-sm">
                   Don&apos;t have an account?{" "}
-                  <a href="#" className="underline underline-offset-4">
+                  <Link to="/sign-up" className="underline underline-offset-4">
                     Sign up
-                  </a>
+                  </Link>
                 </div>
               </div>
             </form>

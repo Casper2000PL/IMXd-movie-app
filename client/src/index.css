@@ -49,6 +49,13 @@
   --font-noto-sans: "Noto Sans", sans-serif;
   --font-impact: "Impact", sans-serif;
   --font-sans: sans-serif;
+  --color-custom-yellow-100: oklch(0.8332 0.1652 89.96);
+  --color-custom-yellow-200: oklch(0.8032 0.1652 89.96);
+  --color-custom-yellow-300: oklch(0.7732 0.1652 89.96);
+  --color-custom-yellow-400: oklch(0.7432 0.1652 89.96);
+
+  /* Custom breakpoint for 480px */
+  --breakpoint-xs: 480px;
 }
 
 :root {

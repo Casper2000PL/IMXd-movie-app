@@ -19,7 +19,7 @@ const Navbar = async () => {
       <div className="container mx-auto flex max-w-7xl items-center justify-between">
         <Link to="/">
           {" "}
-          <div className="flex h-8 w-16 items-center justify-center rounded-sm bg-amber-300">
+          <div className="bg-custom-yellow-100 flex h-8 w-16 items-center justify-center rounded-sm">
             <p
               className="font-impact text-lg font-normal tracking-wide text-black"
               style={{
@@ -74,14 +74,9 @@ const Navbar = async () => {
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <div className="flex items-center gap-2">
-            <Link to="/sign-in">
-              <NavButton>Sign In</NavButton>
-            </Link>
-            <Link to="/sign-up">
-              <NavButton>Sign Up</NavButton>
-            </Link>
-          </div>
+          <Link to="/register">
+            <NavButton>Sign in</NavButton>
+          </Link>
         )}
       </div>
     </div>

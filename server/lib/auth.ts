@@ -12,6 +12,12 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
     autoSignIn: true,
     minPasswordLength: 8,
   },
+  socialProviders: {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    },
+  },
   plugins: [openAPI()],
   trustedOrigins: [
     "http://localhost:3000", // Your frontend URL

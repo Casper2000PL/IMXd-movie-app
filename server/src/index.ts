@@ -4,6 +4,7 @@ import { auth, type AuthType } from "../lib/auth";
 
 export const app = new Hono<{ Variables: AuthType }>();
 
+// middleware
 app.use("*", async (c, next) => {
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
 
@@ -33,5 +34,13 @@ app.get("/session", (c) => {
     user,
   });
 });
+
+const routes = app.basePath("/api");
+
+// const routes = app
+//   .basePath("/api")
+//   .route("/auth", authRouter)
+//   .route("/posts", postRouter)
+//   .route("/comments", commentRouter);
 
 serve(app);

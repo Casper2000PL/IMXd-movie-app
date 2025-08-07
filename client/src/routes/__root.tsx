@@ -1,6 +1,7 @@
 import Navbar from "@/components/navbar";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { Toaster } from "sonner";
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -14,6 +15,7 @@ function RootComponent() {
         <main className="container mx-auto grow">
           {/* This is where the nested routes will be rendered */}
           <Outlet />
+          <Toaster />
         </main>
       </div>
 
