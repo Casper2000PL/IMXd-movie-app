@@ -1,8 +1,15 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { auth, type AuthType } from "../lib/auth";
+import { authMiddleware } from "./middleware";
 
-export const app = new Hono<{ Variables: AuthType }>();
+export const app = new Hono<{ Variables: AuthType }>().get(
+  "/user-info",
+  authMiddleware,
+  (c) => {
+    return c.json({ message: "User info!" });
+  }
+);
 
 // middleware
 app.use("*", async (c, next) => {
