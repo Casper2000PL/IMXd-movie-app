@@ -12,7 +12,7 @@ function RootComponent() {
     <>
       <div className="text-foreground bg-custom-white flex min-h-screen w-full flex-col">
         <Navbar />
-        <main className="container mx-auto grow">
+        <main>
           {/* This is where the nested routes will be rendered */}
           <Outlet />
           <Toaster />
