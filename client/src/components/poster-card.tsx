@@ -1,12 +1,19 @@
+import { cn } from "@/lib/utils";
 import { PlusIcon } from "lucide-react";
 
 interface PosterCardProps {
   poster: string;
+  className?: string;
 }
 
-const PosterCard = ({ poster }: PosterCardProps) => {
+const PosterCard = ({ poster, className }: PosterCardProps) => {
   return (
-    <div className="relative flex h-[195.35px] w-[132px] justify-center overflow-hidden rounded-md rounded-tl-none">
+    <div
+      className={cn(
+        "relative flex h-[244px] w-[165px] justify-center rounded-md rounded-tl-none transition duration-200 hover:opacity-90",
+        className,
+      )}
+    >
       <img
         src={poster}
         alt="Steve"
@@ -15,14 +22,14 @@ const PosterCard = ({ poster }: PosterCardProps) => {
       <button className="absolute top-0 left-0 cursor-pointer">
         {/* Ribbon */}
         <div
-          className="relative flex h-16 w-12 bg-neutral-800/90 transition duration-150 hover:bg-neutral-500/90"
+          className="relative flex h-14 w-10 bg-neutral-800/90 transition duration-150 hover:bg-neutral-500/90"
           style={{
             clipPath:
               "polygon(0% 0%, 100% 0%, 100% 100%, 50% calc(100% - 12px), 0% 100%, 0% calc(100% - 12px))",
           }}
         >
           <PlusIcon
-            className="absolute top-2 left-2 size-8 text-white"
+            className="absolute top-2 left-[5px] size-7 text-white"
             strokeWidth={2.5}
           />
         </div>

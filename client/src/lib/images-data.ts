@@ -16,15 +16,14 @@ import theManInMyBasementImage2 from "@/assets/images/The Man in My Basement-202
 import theManInMyBasementImage3 from "@/assets/images/The Man in My Basement-2025/3.jpg";
 import uploadImage1 from "@/assets/images/Upload-2020/1.jpg";
 
-export const happyGilmoreImages = [happyGilmoreImage1, happyGilmorePoster];
+export const happyGilmoreImages = [happyGilmoreImage1];
 
-export const uploadImages = [uploadImage1, uploadPoster];
+export const uploadImages = [uploadImage1];
 
 export const theManInMyBasementImages = [
   theManInMyBasementImage1,
   theManInMyBasementImage2,
   theManInMyBasementImage3,
-  theManInMyBasementPoster,
 ];
 export const steveImages = [
   steveImage1,
@@ -34,7 +33,6 @@ export const steveImages = [
   steveImage5,
   steveImage6,
   steveImage7,
-  stevePoster,
 ];
 
 export const allPosters = [
@@ -50,3 +48,34 @@ export {
   happyGilmorePoster,
   theManInMyBasementPoster,
 };
+
+export const mockDb = [
+  {
+    id: "steve",
+    poster: stevePoster,
+    images: steveImages,
+    title: "Steve 2020",
+    description: "A thrilling adventure with Steve.",
+  },
+  {
+    id: "upload",
+    poster: uploadPoster,
+    images: uploadImages,
+    title: "Upload 2020",
+    description: "A story about uploading memories.",
+  },
+  {
+    id: "happyGilmore",
+    poster: happyGilmorePoster,
+    images: happyGilmoreImages,
+    title: "Happy Gilmore 2",
+    description: "A sequel to the beloved classic.",
+  },
+  {
+    id: "theManInMyBasement",
+    poster: theManInMyBasementPoster,
+    images: theManInMyBasementImages,
+    title: "The Man in My Basement 2025",
+    description: "A gripping tale of suspense.",
+  },
+];

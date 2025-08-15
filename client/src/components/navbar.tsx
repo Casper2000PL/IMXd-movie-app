@@ -18,7 +18,6 @@ const Navbar = async () => {
     <div className="flex h-14 w-full items-center justify-between bg-gray-900 px-4">
       <div className="container mx-auto flex max-w-7xl items-center justify-between">
         <Link to="/">
-          {" "}
           <div className="bg-custom-yellow-100 flex h-8 w-16 items-center justify-center rounded-sm">
             <p
               className="font-impact text-lg font-normal tracking-wide text-black"
