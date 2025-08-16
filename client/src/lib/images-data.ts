@@ -56,6 +56,7 @@ export const mockDb = [
     images: steveImages,
     title: "Steve 2020",
     description: "A thrilling adventure with Steve.",
+    trailerDuration: "2:01",
   },
   {
     id: "upload",
@@ -63,6 +64,7 @@ export const mockDb = [
     images: uploadImages,
     title: "Upload 2020",
     description: "A story about uploading memories.",
+    trailerDuration: "1:45",
   },
   {
     id: "happyGilmore",
@@ -70,6 +72,7 @@ export const mockDb = [
     images: happyGilmoreImages,
     title: "Happy Gilmore 2",
     description: "A sequel to the beloved classic.",
+    trailerDuration: "2:30",
   },
   {
     id: "theManInMyBasement",
@@ -77,5 +80,6 @@ export const mockDb = [
     images: theManInMyBasementImages,
     title: "The Man in My Basement 2025",
     description: "A gripping tale of suspense.",
+    trailerDuration: "3:12",
   },
 ];

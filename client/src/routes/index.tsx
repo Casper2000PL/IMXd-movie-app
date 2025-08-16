@@ -10,7 +10,7 @@ export const Route = createFileRoute("/")({
 function RouteComponent() {
   return (
     <div className="flex h-full w-full justify-center bg-black">
-      <div className="h-full w-full max-w-7xl px-4">
+      <div className="h-full w-full max-w-7xl max-xl:px-2">
         {/* Carousel Section */}
         <CarouselSection />
 
@@ -18,7 +18,7 @@ function RouteComponent() {
 
         <div className="flex w-full gap-10">
           {allPosters.map((poster) => (
-            <PosterCard key={poster} poster={poster} />
+            <PosterCard key={poster} poster={poster} withRibbon />
           ))}
         </div>
 

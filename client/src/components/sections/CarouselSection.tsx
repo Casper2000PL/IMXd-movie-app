@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import { mockDb, steveImages } from "@/lib/images-data";
+import { mockDb } from "@/lib/images-data";
+import { useState, useEffect, useCallback } from "react";
 import {
   Carousel,
   CarouselContent,
@@ -10,16 +11,73 @@ import {
   type CarouselApi,
 } from "../ui/carousel";
 import PosterCard from "../poster-card";
-import { CirclePlayIcon, HeartIcon, ThumbsUpIcon } from "lucide-react";
+import {
+  ChevronRightIcon,
+  CirclePlayIcon,
+  HeartIcon,
+  ThumbsUpIcon,
+} from "lucide-react";
+import TrailerCard from "../trailer-card";
 
 const CarouselSection = () => {
-  const steveImage1 = steveImages[0];
+  const [mainApi, setMainApi] = useState<CarouselApi>();
+  const [sideApi, setSideApi] = useState<CarouselApi>();
+  const [currentMainIndex, setCurrentMainIndex] = useState(0);
+
+  const getUpNextItems = useCallback(
+    (currentIndex: number) => {
+      if (mockDb.length === 0) return [];
+
+      const nextItems = [];
+      const itemsToShow = Math.min(3, mockDb.length - 1);
+
+      for (let i = 1; i <= itemsToShow; i++) {
+        const nextIndex = (currentIndex + i) % mockDb.length;
+        nextItems.push(mockDb[nextIndex]);
+      }
+
+      // If we have fewer than 3 items total, just return what we have
+      if (mockDb.length <= 3) {
+        return mockDb.filter((_, index) => index !== currentIndex);
+      }
+
+      return nextItems;
+    },
+    [mockDb.length],
+  );
+
+  const updateSideCarousel = useCallback(
+    (currentIndex: number) => {
+      if (sideApi && mockDb.length > 1) {
+        sideApi.scrollTo(0, true);
+      }
+    },
+    [sideApi, mockDb.length],
+  );
+
+  useEffect(() => {
+    if (!mainApi) return;
+
+    const onSelect = () => {
+      const newIndex = mainApi.selectedScrollSnap();
+      setCurrentMainIndex(newIndex);
+      updateSideCarousel(newIndex);
+    };
+
+    mainApi.on("select", onSelect);
+    onSelect();
+
+    return () => {
+      mainApi.off("select", onSelect);
+    };
+  }, [mainApi, updateSideCarousel]);
 
   return (
-    <section className="mt-2 flex max-h-200 min-h-140 w-full gap-2 max-lg:px-2">
+    <section className="mt-2 flex max-h-200 min-h-140 w-full gap-4 max-lg:px-2">
       {/* Carousel Big */}
-      <div className="flex min-h-full w-full flex-3">
+      <div className="flex min-h-full w-full flex-9">
         <Carousel
+          setApi={setMainApi}
           className="h-full w-full flex-1"
           opts={{
             loop: true,
@@ -30,7 +88,7 @@ const CarouselSection = () => {
               {mockDb.map((movie) => (
                 <CarouselItem
                   key={movie.id}
-                  className="relative min-h-150 w-full cursor-pointer overflow-visible p-0"
+                  className="group relative min-h-150 w-full cursor-pointer overflow-visible p-0"
                 >
                   <div
                     className="flex h-120 w-full items-center justify-center rounded-md mask-b-from-50% mask-b-to-90% transition duration-300 hover:opacity-90"
@@ -40,15 +98,15 @@ const CarouselSection = () => {
                       backgroundPosition: "center",
                     }}
                   />
-                  <div className="absolute right-5 bottom-0 left-5 z-10 flex gap-4">
-                    <PosterCard poster={movie.poster} />
+                  <div className="absolute right-5 bottom-0 left-8 z-10 flex gap-4">
+                    <PosterCard poster={movie.poster} withRibbon />
                     <div className="flex flex-1 gap-5">
                       <div className="flex h-full w-full flex-col">
                         <div className="flex flex-3" />
                         <div className="flex flex-4 items-start gap-4">
                           <button className="cursor-pointer">
                             <CirclePlayIcon
-                              className="hover:text-custom-yellow-200 size-24 text-white"
+                              className="group-hover:text-custom-yellow-200 size-24 text-white"
                               strokeWidth={1}
                             />
                           </button>
@@ -77,60 +135,53 @@ const CarouselSection = () => {
                   </div>
                 </CarouselItem>
               ))}
-              {/* <CarouselItem className="relative min-h-150 w-full cursor-pointer overflow-visible p-0">
-                <div
-                  className="flex h-120 w-full items-center justify-center rounded-md mask-b-from-50% mask-b-to-90% transition duration-300 hover:opacity-90"
-                  style={{
-                    backgroundImage: `url(${steveImage1})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }}
-                />
-
-                <div className="absolute right-5 bottom-0 left-5 z-10 flex gap-4">
-                  <PosterCard poster={stevePoster} />
-                  <div className="flex flex-1 gap-5">
-                    <div className="flex h-full w-full flex-col">
-                      <div className="flex flex-3" />
-                      <div className="flex flex-4 items-start gap-4">
-                        <button className="cursor-pointer">
-                          <CirclePlayIcon
-                            className="hover:text-custom-yellow-200 size-24 text-white"
-                            strokeWidth={1}
-                          />
-                        </button>
-                        <div className="flex flex-1 flex-col gap-2 py-2">
-                          <h1 className="font-roboto text-4xl text-white">
-                            Some long title
-                          </h1>
-                          <p className="font-roboto text-muted-foreground">
-                            some description asdasd
-                          </p>
-                          <div className="flex w-full items-center gap-1 pt-1">
-                            <ThumbsUpIcon className="text-muted-foreground size-4" />
-                            <span className="text-muted-foreground text-sm">
-                              12
-                            </span>
-                            <span className="w-1"></span>
-                            <HeartIcon className="size-5" fill="#F52765" />
-                            <span className="text-muted-foreground text-sm">
-                              44
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CarouselItem> */}
             </CarouselContent>
             <CarouselPreviousCustom />
             <CarouselNextCustom />
           </div>
         </Carousel>
       </div>
+
       {/* Carousel Mini ( Up Next Section ) */}
-      <div className="hidden min-h-full w-full flex-1 bg-red-300 lg:flex"></div>
+      {mockDb.length > 1 && (
+        <div className="hidden min-h-full w-full flex-3 flex-col gap-8 lg:flex">
+          <h2 className="text-custom-yellow-100 mt-1 font-sans text-xl font-semibold">
+            Up next
+          </h2>
+          {/* new style */}
+          <div className="relative flex flex-1">
+            <div className="absolute inset-0 top-0 right-0 bottom-0 left-0 bg-gray-900 mask-b-from-5% mask-b-to-50%"></div>
+
+            <Carousel
+              setApi={setSideApi}
+              orientation="vertical"
+              opts={{
+                loop: false, // Disable loop for side carousel since we're managing content
+                watchDrag: false,
+              }}
+              className="relative max-h-125"
+            >
+              <CarouselContent className="flex w-full gap-5 p-5">
+                {getUpNextItems(currentMainIndex).map((item, index) => (
+                  <CarouselItem key={`${item.id}-${currentMainIndex}-${index}`}>
+                    <TrailerCard
+                      duration={item.trailerDuration}
+                      title={item.title}
+                      poster={item.poster}
+                    />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+          </div>
+
+          {/* button */}
+          <button className="hover:text-custom-yellow-200 ml-5 flex w-fit cursor-pointer items-center text-left font-sans text-xl font-semibold text-white">
+            Browse trailers
+            <ChevronRightIcon className="ml-1 size-5" strokeWidth={3} />
+          </button>
+        </div>
+      )}
     </section>
   );
 };
