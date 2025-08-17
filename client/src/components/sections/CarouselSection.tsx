@@ -98,7 +98,7 @@ const CarouselSection = () => {
                       backgroundPosition: "center",
                     }}
                   />
-                  <div className="absolute right-5 bottom-0 left-8 z-10 flex gap-4">
+                  <div className="absolute right-5 bottom-0 left-6 z-10 flex gap-4">
                     <PosterCard poster={movie.poster} withRibbon />
                     <div className="flex flex-1 gap-5">
                       <div className="flex h-full w-full flex-col">
@@ -114,7 +114,7 @@ const CarouselSection = () => {
                             <h1 className="font-roboto text-4xl text-white">
                               {movie.title}
                             </h1>
-                            <p className="font-roboto text-muted-foreground">
+                            <p className="font-roboto text-muted-foreground text-lg">
                               {movie.description}
                             </p>
                             <div className="flex w-full items-center gap-1 pt-1">

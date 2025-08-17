@@ -208,7 +208,11 @@ function CarouselPreviousCustom({ className }: { className?: string }) {
       direction="left"
       onClick={scrollPrev}
       disabled={!canScrollPrev}
-      className={cn("absolute top-1/2 left-0 -translate-y-1/2", className)}
+      className={cn(
+        "absolute top-1/2 left-0 -translate-y-1/2",
+        className,
+        `${!canScrollPrev && "hidden"}`,
+      )}
       data-slot="carousel-previous"
     />
   );

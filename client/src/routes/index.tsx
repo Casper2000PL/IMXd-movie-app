@@ -1,5 +1,6 @@
 import PosterCard from "@/components/poster-card";
 import CarouselSection from "@/components/sections/CarouselSection";
+import FeaturedTodaySection from "@/components/sections/FeaturedTodaySection";
 import { allPosters } from "@/lib/images-data";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -10,19 +11,18 @@ export const Route = createFileRoute("/")({
 function RouteComponent() {
   return (
     <div className="flex h-full w-full justify-center bg-black">
-      <div className="h-full w-full max-w-7xl max-xl:px-2">
+      <div className="flex h-full w-full max-w-7xl flex-col gap-15 max-xl:px-2">
         {/* Carousel Section */}
         <CarouselSection />
 
-        <div className="h-40"></div>
+        {/* Featured Today Section */}
+        <FeaturedTodaySection />
 
-        <div className="flex w-full gap-10">
+        <div className="mb-20 flex w-full gap-10">
           {allPosters.map((poster) => (
             <PosterCard key={poster} poster={poster} withRibbon />
           ))}
         </div>
-
-        <div className="h-20"></div>
       </div>
 
       {/* Featured Today Section */}
