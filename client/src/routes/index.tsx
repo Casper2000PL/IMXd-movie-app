@@ -1,5 +1,6 @@
 import PosterCard from "@/components/poster-card";
 import CarouselSection from "@/components/sections/CarouselSection";
+import CelebritiesSection from "@/components/sections/CelebritiesSection";
 import FeaturedTodaySection from "@/components/sections/FeaturedTodaySection";
 import { allPosters } from "@/lib/images-data";
 import { createFileRoute } from "@tanstack/react-router";
@@ -18,6 +19,9 @@ function RouteComponent() {
         {/* Featured Today Section */}
         <FeaturedTodaySection />
 
+        {/* Most Popular Celebrities Section */}
+        <CelebritiesSection />
+
         <div className="mb-20 flex w-full gap-10">
           {allPosters.map((poster) => (
             <PosterCard key={poster} poster={poster} withRibbon />
@@ -25,8 +29,6 @@ function RouteComponent() {
         </div>
       </div>
 
-      {/* Featured Today Section */}
-      {/* Most Popular Celebrities Section */}
       {/* What to watch Section */}
       {/* From your Watchlist Section */}
       {/* Top 10 on IMDb this week Section */}

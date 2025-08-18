@@ -10,7 +10,7 @@ import {
 
 const FeaturedTodaySection = () => {
   return (
-    <div className="flex w-full flex-col gap-5">
+    <section className="flex w-full flex-col gap-5">
       <h1 className="text-custom-yellow-100 font-roboto text-2xl font-bold xl:text-3xl">
         Featured today
       </h1>
@@ -121,7 +121,7 @@ const FeaturedTodaySection = () => {
           <CarouselNextCustom className="top-1/3" />
         </Carousel>
       </div>
-    </div>
+    </section>
   );
 };
 

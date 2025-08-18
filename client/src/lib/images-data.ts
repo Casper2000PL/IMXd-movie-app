@@ -15,6 +15,51 @@ import theManInMyBasementImage1 from "@/assets/images/The Man in My Basement-202
 import theManInMyBasementImage2 from "@/assets/images/The Man in My Basement-2025/2.jpg";
 import theManInMyBasementImage3 from "@/assets/images/The Man in My Basement-2025/3.jpg";
 import uploadImage1 from "@/assets/images/Upload-2020/1.jpg";
+import adam_sandler from "@/assets/images/actors/adam-sandler.jpg";
+import christopher_mcdonald from "@/assets/images/actors/christopher-mcdonald.jpg";
+import cillian from "@/assets/images/actors/cillian.jpg";
+import corey_hawkins from "@/assets/images/actors/corey-hawkins.jpg";
+import julie_bowen from "@/assets/images/actors/julie-bowen.jpg";
+import robbie_ammel from "@/assets/images/actors/robbie-amell.jpg";
+import willem_dafoe from "@/assets/images/actors/willem-dafoe.jpg";
+
+export const celebsDB = [
+  {
+    id: "adam-sandler",
+    name: "Adam Sandler",
+    image: adam_sandler,
+  },
+  {
+    id: "christopher-mcdonald",
+    name: "Christopher McDonald",
+    image: christopher_mcdonald,
+  },
+  {
+    id: "cillian",
+    name: "Cillian Murphy",
+    image: cillian,
+  },
+  {
+    id: "corey-hawkins",
+    name: "Corey Hawkins",
+    image: corey_hawkins,
+  },
+  {
+    id: "julie-bowen",
+    name: "Julie Bowen",
+    image: julie_bowen,
+  },
+  {
+    id: "robbie-ammel",
+    name: "Robbie Amell",
+    image: robbie_ammel,
+  },
+  {
+    id: "willem-dafoe",
+    name: "Willem Dafoe",
+    image: willem_dafoe,
+  },
+];
 
 export const happyGilmoreImages = [happyGilmoreImage1];
 
