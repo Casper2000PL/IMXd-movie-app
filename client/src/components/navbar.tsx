@@ -30,7 +30,9 @@ const Navbar = async () => {
             </p>
           </div>
         </Link>
-
+        <NavButton>
+          <Link to="/add-content">Add Content</Link>
+        </NavButton>
         {isLoggedIn ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
