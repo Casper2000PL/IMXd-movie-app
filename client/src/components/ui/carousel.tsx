@@ -256,7 +256,11 @@ function CarouselNextCustom({ className }: { className?: string }) {
       direction="right"
       onClick={scrollNext}
       disabled={!canScrollNext}
-      className={cn("absolute top-1/2 right-0 -translate-y-1/2", className)}
+      className={cn(
+        "absolute top-1/2 right-0 -translate-y-1/2",
+        className,
+        `${!canScrollNext && "hidden"}`,
+      )}
       data-slot="carousel-next"
     />
   );
