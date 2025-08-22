@@ -20,6 +20,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
 import * as z from "zod";
+import { useState } from "react";
+import { FileIcon } from "lucide-react";
 
 const formSchema = z.object({
   title: z.string().min(1, {
@@ -35,6 +37,18 @@ const formSchema = z.object({
   status: z.string().optional(),
   numberOfSeasons: z.string().optional(),
   numberOfEpisodes: z.string().optional(),
+  poster: z
+    .any()
+    .refine((files) => files?.length > 0, "Poster is required.")
+    .refine(
+      (files) => files?.[0]?.size <= 5 * 1024 * 1024,
+      "Max file size is 5MB.",
+    )
+    .refine(
+      (files) =>
+        ["image/jpeg", "image/png", "image/jpg"].includes(files?.[0]?.type),
+      "Only .jpg, .jpeg, and .png formats are supported.",
+    ),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -44,6 +58,8 @@ export const Route = createFileRoute("/add-content")({
 });
 
 function RouteComponent() {
+  const [preview, setPreview] = useState<string | null>(null);
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -56,14 +72,40 @@ function RouteComponent() {
       status: "released",
       numberOfSeasons: "",
       numberOfEpisodes: "",
+      poster: undefined,
     },
   });
 
   const watchedType = form.watch("type");
+  const posterValue = form.watch("poster");
 
   const onSubmit = (data: FormData) => {
     console.log("Form submitted:", data);
-    // Here you would typically send the data to your API
+    // Create FormData for file upload
+    const formData = new FormData();
+    formData.append("poster", data.poster[0]);
+    formData.append("title", data.title);
+    formData.append("type", data.type);
+    // Add other fields...
+
+    // Here you would typically send the formData to your API
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files[0]) {
+      form.setValue("poster", files);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => setPreview(e.target?.result as string);
+      reader.readAsDataURL(files[0]);
+    }
+  };
+
+  const clearFile = () => {
+    form.setValue("poster", undefined);
+    setPreview(null);
   };
 
   return (
@@ -87,6 +129,78 @@ function RouteComponent() {
                   <FormLabel>Title *</FormLabel>
                   <FormControl>
                     <Input placeholder="Enter movie or show title" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Poster - Updated with proper file upload */}
+            <FormField
+              control={form.control}
+              name="poster"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Poster *</FormLabel>
+                  <FormControl>
+                    <div className="space-y-4">
+                      {/* Hidden file input */}
+                      <Input
+                        type="file"
+                        accept="image/jpeg,image/png,image/jpg"
+                        className="hidden"
+                        id="poster-upload"
+                        onChange={handleFileChange}
+                        ref={field.ref}
+                      />
+
+                      {/* Custom file upload button */}
+                      <label
+                        htmlFor="poster-upload"
+                        className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 p-6 transition-colors hover:border-blue-400 hover:bg-gray-50"
+                      >
+                        <FileIcon className="h-8 w-8 text-gray-400" />
+                        <div className="text-center">
+                          <p className="text-sm font-medium text-gray-900">
+                            Click to upload poster
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            PNG, JPG up to 5MB
+                          </p>
+                        </div>
+                      </label>
+
+                      {/* Selected file info */}
+                      {posterValue?.[0] && (
+                        <div className="rounded-md bg-blue-50 p-3">
+                          <p className="text-sm font-medium text-blue-800">
+                            Selected file: {posterValue[0].name}
+                          </p>
+                          <p className="text-xs text-blue-600">
+                            {(posterValue[0].size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                          <button
+                            type="button"
+                            onClick={clearFile}
+                            className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+                          >
+                            Remove file
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Image preview */}
+                      {preview && (
+                        <div className="relative mt-4">
+                          <p className="mb-2 text-sm font-medium">Preview:</p>
+                          <img
+                            src={preview}
+                            alt="Poster preview"
+                            className="h-40 w-32 rounded border object-cover"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -262,8 +376,12 @@ function RouteComponent() {
 
             {/* Submit Button */}
             <div className="flex justify-end pt-6">
-              <Button type="submit" className="px-8">
-                Add Content
+              <Button
+                type="submit"
+                className="px-8"
+                disabled={form.formState.isSubmitting}
+              >
+                {form.formState.isSubmitting ? "Adding..." : "Add Content"}
               </Button>
             </div>
           </form>

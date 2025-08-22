@@ -7,7 +7,7 @@ interface CelebCardProps {
 
 const CelebCard = ({ name, image }: CelebCardProps) => {
   return (
-    <div className="flex w-48 cursor-pointer flex-col gap-5 transition duration-300 hover:opacity-90">
+    <div className="flex w-48 cursor-pointer flex-col gap-5 transition duration-200 hover:opacity-70">
       <div className="h-48 w-48 overflow-hidden rounded-full">
         <img
           src={image}
