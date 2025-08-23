@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   FormControl,
   FormField,
@@ -21,7 +22,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
 import * as z from "zod";
 import { useState } from "react";
-import { FileIcon } from "lucide-react";
+import { FileIcon, Trash2Icon } from "lucide-react";
+import { useDropzone } from "react-dropzone";
 
 const formSchema = z.object({
   title: z.string().min(1, {
@@ -108,6 +110,14 @@ function RouteComponent() {
     setPreview(null);
   };
 
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    maxFiles: 5,
+    maxSize: 1024 * 1024 * 5, // 5 MB limit
+    accept: {
+      "image/*": [],
+    },
+  });
+
   return (
     <div className="mx-auto flex h-full w-full max-w-4xl px-4 py-10">
       <div className="w-full">
@@ -116,6 +126,20 @@ function RouteComponent() {
           <p className="mt-2 text-gray-600">
             Add a new movie or TV show to your database
           </p>
+        </div>
+
+        <div
+          {...getRootProps()}
+          className="border-2 border-dashed border-gray-300 p-6"
+        >
+          <input {...getInputProps()} />
+          {isDragActive ? (
+            <p className="text-gray-600">Drop the files here ...</p>
+          ) : (
+            <p className="text-gray-600">
+              Drag 'n' drop some files here, or click to select files
+            </p>
+          )}
         </div>
 
         <Form {...form}>
@@ -157,9 +181,9 @@ function RouteComponent() {
                       {/* Custom file upload button */}
                       <label
                         htmlFor="poster-upload"
-                        className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 p-6 transition-colors hover:border-blue-400 hover:bg-gray-50"
+                        className="group border-custom-yellow-300 hover:bg-custom-yellow-100/30 flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 transition-colors hover:border-gray-300"
                       >
-                        <FileIcon className="h-8 w-8 text-gray-400" />
+                        <FileIcon className="text-custom-yellow-100 h-8 w-8 group-hover:text-gray-400" />
                         <div className="text-center">
                           <p className="text-sm font-medium text-gray-900">
                             Click to upload poster
@@ -172,19 +196,19 @@ function RouteComponent() {
 
                       {/* Selected file info */}
                       {posterValue?.[0] && (
-                        <div className="rounded-md bg-blue-50 p-3">
-                          <p className="text-sm font-medium text-blue-800">
+                        <div className="rounded-md bg-stone-300/30 p-3">
+                          <p className="text-base font-medium text-black">
                             Selected file: {posterValue[0].name}
                           </p>
-                          <p className="text-xs text-blue-600">
+                          <p className="text-muted-foreground text-sm">
                             {(posterValue[0].size / 1024 / 1024).toFixed(2)} MB
                           </p>
                           <button
                             type="button"
                             onClick={clearFile}
-                            className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+                            className="bg-destructive hover:bg-destructive/70 mt-5 flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-white transition duration-200"
                           >
-                            Remove file
+                            <Trash2Icon className="size-4" /> Remove file
                           </button>
                         </div>
                       )}
@@ -196,7 +220,7 @@ function RouteComponent() {
                           <img
                             src={preview}
                             alt="Poster preview"
-                            className="h-40 w-32 rounded border object-cover"
+                            className="h-50 rounded border object-cover"
                           />
                         </div>
                       )}
@@ -292,8 +316,8 @@ function RouteComponent() {
 
             {/* TV Show specific fields */}
             {watchedType === "show" && (
-              <div className="grid grid-cols-1 gap-4 rounded-lg bg-blue-50 p-4 md:grid-cols-2">
-                <h3 className="col-span-full mb-2 text-lg font-semibold text-blue-800">
+              <div className="grid grid-cols-1 gap-4 rounded-lg py-4 md:grid-cols-2">
+                <h3 className="col-span-full mb-2 text-lg font-semibold">
                   TV Show Details
                 </h3>
 
