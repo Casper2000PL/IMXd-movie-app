@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { Button } from "@/components/ui/button";
 import {
+  Form,
   FormControl,
   FormField,
   FormItem,
@@ -7,8 +9,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -16,14 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createFileRoute } from "@tanstack/react-router";
-import { useForm } from "react-hook-form";
+import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form } from "@/components/ui/form";
-import * as z from "zod";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { FileIcon, Trash2Icon } from "lucide-react";
-import { useDropzone } from "react-dropzone";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { db } from "../../../server/db/index";
+import { content } from "../../../server/db/schemas/system-schema";
 
 const formSchema = z.object({
   title: z.string().min(1, {
@@ -39,18 +39,18 @@ const formSchema = z.object({
   status: z.string().optional(),
   numberOfSeasons: z.string().optional(),
   numberOfEpisodes: z.string().optional(),
-  poster: z
-    .any()
-    .refine((files) => files?.length > 0, "Poster is required.")
-    .refine(
-      (files) => files?.[0]?.size <= 5 * 1024 * 1024,
-      "Max file size is 5MB.",
-    )
-    .refine(
-      (files) =>
-        ["image/jpeg", "image/png", "image/jpg"].includes(files?.[0]?.type),
-      "Only .jpg, .jpeg, and .png formats are supported.",
-    ),
+  // poster: z
+  //   .any()
+  //   .refine((files) => files?.length > 0, "Poster is required.")
+  //   .refine(
+  //     (files) => files?.[0]?.size <= 5 * 1024 * 1024,
+  //     "Max file size is 5MB.",
+  //   )
+  //   .refine(
+  //     (files) =>
+  //       ["image/jpeg", "image/png", "image/jpg"].includes(files?.[0]?.type),
+  //     "Only .jpg, .jpeg, and .png formats are supported.",
+  //   ),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -74,74 +74,49 @@ function RouteComponent() {
       status: "released",
       numberOfSeasons: "",
       numberOfEpisodes: "",
-      poster: undefined,
+      // poster: undefined,
     },
   });
 
   const watchedType = form.watch("type");
-  const posterValue = form.watch("poster");
+  // const posterValue = form.watch("poster");
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = async (data: FormData) => {
     console.log("Form submitted:", data);
     // Create FormData for file upload
     const formData = new FormData();
-    formData.append("poster", data.poster[0]);
+    // formData.append("poster", data.poster[0]);
     formData.append("title", data.title);
     formData.append("type", data.type);
     // Add other fields...
 
     // Here you would typically send the formData to your API
+
+    const contentData = await db.select().from(content);
+
+    console.log(contentData);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files[0]) {
-      form.setValue("poster", files);
+  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const files = e.target.files;
+  //   if (files && files[0]) {
+  //     // form.setValue("poster", files);
 
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => setPreview(e.target?.result as string);
-      reader.readAsDataURL(files[0]);
-    }
-  };
+  //     // Create preview
+  //     const reader = new FileReader();
+  //     reader.onload = (e) => setPreview(e.target?.result as string);
+  //     reader.readAsDataURL(files[0]);
+  //   }
+  // };
 
   const clearFile = () => {
-    form.setValue("poster", undefined);
+    // form.setValue("poster", undefined);
     setPreview(null);
   };
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    maxFiles: 5,
-    maxSize: 1024 * 1024 * 5, // 5 MB limit
-    accept: {
-      "image/*": [],
-    },
-  });
 
   return (
     <div className="mx-auto flex h-full w-full max-w-4xl px-4 py-10">
       <div className="w-full">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Add New Content</h1>
-          <p className="mt-2 text-gray-600">
-            Add a new movie or TV show to your database
-          </p>
-        </div>
-
-        <div
-          {...getRootProps()}
-          className="border-2 border-dashed border-gray-300 p-6"
-        >
-          <input {...getInputProps()} />
-          {isDragActive ? (
-            <p className="text-gray-600">Drop the files here ...</p>
-          ) : (
-            <p className="text-gray-600">
-              Drag 'n' drop some files here, or click to select files
-            </p>
-          )}
-        </div>
-
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Title */}
@@ -160,7 +135,7 @@ function RouteComponent() {
             />
 
             {/* Poster - Updated with proper file upload */}
-            <FormField
+            {/* <FormField
               control={form.control}
               name="poster"
               render={({ field }) => (
@@ -168,7 +143,7 @@ function RouteComponent() {
                   <FormLabel>Poster *</FormLabel>
                   <FormControl>
                     <div className="space-y-4">
-                      {/* Hidden file input */}
+                      {
                       <Input
                         type="file"
                         accept="image/jpeg,image/png,image/jpg"
@@ -178,7 +153,7 @@ function RouteComponent() {
                         ref={field.ref}
                       />
 
-                      {/* Custom file upload button */}
+                
                       <label
                         htmlFor="poster-upload"
                         className="group border-custom-yellow-300 hover:bg-custom-yellow-100/30 flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 transition-colors hover:border-gray-300"
@@ -194,7 +169,7 @@ function RouteComponent() {
                         </div>
                       </label>
 
-                      {/* Selected file info */}
+                   
                       {posterValue?.[0] && (
                         <div className="rounded-md bg-stone-300/30 p-3">
                           <p className="text-base font-medium text-black">
@@ -213,7 +188,7 @@ function RouteComponent() {
                         </div>
                       )}
 
-                      {/* Image preview */}
+                     
                       {preview && (
                         <div className="relative mt-4">
                           <p className="mb-2 text-sm font-medium">Preview:</p>
@@ -229,7 +204,7 @@ function RouteComponent() {
                   <FormMessage />
                 </FormItem>
               )}
-            />
+            /> */}
 
             {/* Content Type */}
             <FormField
