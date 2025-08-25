@@ -1,8 +1,11 @@
 import { hc } from "hono/client";
-import type { app } from "./index";
+import type { AppType } from "./index";
 
-export type AppType = typeof app;
 export type Client = ReturnType<typeof hc<AppType>>;
 
+// Default client with base URL
+export const client = hc<AppType>("http://localhost:3000");
+
+// Optional: Keep the flexible version if you need it
 export const hcWithType = (...args: Parameters<typeof hc>): Client =>
   hc<AppType>(...args);

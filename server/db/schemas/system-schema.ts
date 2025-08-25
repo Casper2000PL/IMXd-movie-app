@@ -50,13 +50,13 @@ export const content = pgTable(
     description: text("description"),
     releaseDate: date("release_date"),
     runtime: integer("runtime"), // Runtime in minutes
-    rating: decimal("rating", { precision: 3, scale: 1 }), // e.g., 8.5
+    rating: decimal("rating", { precision: 3, scale: 1 }).default("0.0"), // e.g., 8.5
     status: statusEnum("status").default("released"),
     language: varchar("language", { length: 10 }).default("en"),
 
     // TV show specific fields
-    numberOfSeasons: integer("number_of_seasons"),
-    numberOfEpisodes: integer("number_of_episodes"),
+    numberOfSeasons: integer("number_of_seasons").default(0),
+    numberOfEpisodes: integer("number_of_episodes").default(0),
 
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),

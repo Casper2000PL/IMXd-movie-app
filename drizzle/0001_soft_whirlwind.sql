@@ -1,0 +1,1 @@
+ALTER TABLE "content" ALTER COLUMN "rating" SET DEFAULT '0.0';

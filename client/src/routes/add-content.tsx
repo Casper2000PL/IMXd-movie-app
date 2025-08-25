@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -17,13 +16,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { createContent, getContent } from "@/lib/api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { db } from "../../../server/db/index";
-import { content } from "../../../server/db/schemas/system-schema";
 
 const formSchema = z.object({
   title: z.string().min(1, {
@@ -39,18 +36,6 @@ const formSchema = z.object({
   status: z.string().optional(),
   numberOfSeasons: z.string().optional(),
   numberOfEpisodes: z.string().optional(),
-  // poster: z
-  //   .any()
-  //   .refine((files) => files?.length > 0, "Poster is required.")
-  //   .refine(
-  //     (files) => files?.[0]?.size <= 5 * 1024 * 1024,
-  //     "Max file size is 5MB.",
-  //   )
-  //   .refine(
-  //     (files) =>
-  //       ["image/jpeg", "image/png", "image/jpg"].includes(files?.[0]?.type),
-  //     "Only .jpg, .jpeg, and .png formats are supported.",
-  //   ),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -60,8 +45,6 @@ export const Route = createFileRoute("/add-content")({
 });
 
 function RouteComponent() {
-  const [preview, setPreview] = useState<string | null>(null);
-
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -74,44 +57,31 @@ function RouteComponent() {
       status: "released",
       numberOfSeasons: "",
       numberOfEpisodes: "",
-      // poster: undefined,
     },
   });
 
   const watchedType = form.watch("type");
-  // const posterValue = form.watch("poster");
 
-  const onSubmit = async (data: FormData) => {
-    console.log("Form submitted:", data);
-    // Create FormData for file upload
-    const formData = new FormData();
-    // formData.append("poster", data.poster[0]);
-    formData.append("title", data.title);
-    formData.append("type", data.type);
-    // Add other fields...
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    console.log("Values: ", values);
+    console.log("Values.title: ", values.title);
 
-    // Here you would typically send the formData to your API
+    const form = {
+      title: values.title,
+      type: values.type,
+      description: values.description,
+      releaseDate: values.releaseDate,
+      runtime: values.runtime,
+      language: values.language,
+      status: values.status,
+      numberOfSeasons: values.numberOfSeasons,
+      numberOfEpisodes: values.numberOfEpisodes,
+    };
 
-    const contentData = await db.select().from(content);
+    await createContent(form);
 
-    console.log(contentData);
-  };
-
-  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const files = e.target.files;
-  //   if (files && files[0]) {
-  //     // form.setValue("poster", files);
-
-  //     // Create preview
-  //     const reader = new FileReader();
-  //     reader.onload = (e) => setPreview(e.target?.result as string);
-  //     reader.readAsDataURL(files[0]);
-  //   }
-  // };
-
-  const clearFile = () => {
-    // form.setValue("poster", undefined);
-    setPreview(null);
+    const content = await getContent();
+    console.log("Content: ", content);
   };
 
   return (
@@ -251,7 +221,7 @@ function RouteComponent() {
               )}
             />
 
-            {/* Row: Release Date, Runtime, Rating */}
+            {/* Row: Release Date, Runtime */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <FormField
                 control={form.control}
