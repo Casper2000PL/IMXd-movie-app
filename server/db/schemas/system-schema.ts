@@ -1,19 +1,19 @@
+import { relations } from "drizzle-orm";
 import {
+  bigint,
+  boolean,
+  date,
+  decimal,
+  index,
+  integer,
+  pgEnum,
   pgTable,
-  uuid,
-  varchar,
   text,
   timestamp,
-  date,
-  integer,
-  decimal,
-  boolean,
-  bigint,
-  pgEnum,
-  index,
   unique,
+  uuid,
+  varchar,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
 
 // Enums
 export const contentTypeEnum = pgEnum("content_type", ["movie", "show"]);
@@ -88,8 +88,12 @@ export const castCrew = pgTable(
   "cast_crew",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    contentId: uuid("content_id").notNull(),
-    personId: uuid("person_id").notNull(),
+    contentId: uuid("content_id")
+      .notNull()
+      .references(() => content.id, { onDelete: "cascade" }),
+    personId: uuid("person_id")
+      .notNull()
+      .references(() => people.id, { onDelete: "cascade" }),
     role: roleEnum("role").notNull(),
     characterName: varchar("character_name", { length: 255 }), // For actors
     creditOrder: integer("credit_order"), // Order in credits (1 = first billed)
@@ -113,7 +117,9 @@ export const media = pgTable(
   "media",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    contentId: uuid("content_id"),
+    contentId: uuid("content_id").references(() => content.id, {
+      onDelete: "cascade",
+    }),
     fileUrl: varchar("file_url", { length: 500 }).notNull(),
     type: mediaTypeEnum("type").notNull(),
     mediaCategory: mediaCategoryEnum("media_category").notNull(),
@@ -149,11 +155,19 @@ export const contentGenres = pgTable(
   "content_genres",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    contentId: uuid("content_id").notNull(),
-    genreId: uuid("genre_id").notNull(),
+    contentId: uuid("content_id")
+      .notNull()
+      .references(() => content.id, { onDelete: "cascade" }),
+    genreId: uuid("genre_id")
+      .notNull()
+      .references(() => genres.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow(),
   },
-  (table) => [unique("unique_content_genre").on(table.contentId, table.genreId)]
+  (table) => [
+    unique("unique_content_genre").on(table.contentId, table.genreId),
+    index("content_genres_content_idx").on(table.contentId),
+    index("content_genres_genre_idx").on(table.genreId),
+  ]
 );
 
 // Seasons table (for TV shows)
@@ -161,7 +175,9 @@ export const seasons = pgTable(
   "seasons",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    contentId: uuid("content_id").notNull(),
+    contentId: uuid("content_id")
+      .notNull()
+      .references(() => content.id, { onDelete: "cascade" }),
     seasonNumber: integer("season_number").notNull(),
     name: varchar("name", { length: 255 }),
     overview: text("overview"),
@@ -172,6 +188,7 @@ export const seasons = pgTable(
   },
   (table) => [
     unique("unique_content_season").on(table.contentId, table.seasonNumber),
+    index("seasons_content_idx").on(table.contentId),
   ]
 );
 
@@ -180,7 +197,9 @@ export const episodes = pgTable(
   "episodes",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    seasonId: uuid("season_id").notNull(),
+    seasonId: uuid("season_id")
+      .notNull()
+      .references(() => seasons.id, { onDelete: "cascade" }),
     episodeNumber: integer("episode_number").notNull(),
     title: varchar("title", { length: 255 }).notNull(),
     overview: text("overview"),
@@ -194,10 +213,11 @@ export const episodes = pgTable(
   (table) => [
     unique("unique_season_episode").on(table.seasonId, table.episodeNumber),
     index("episodes_air_date_idx").on(table.airDate),
+    index("episodes_season_idx").on(table.seasonId),
   ]
 );
 
-// Relations
+// Relations (kept for TypeScript inference and query building)
 export const contentRelations = relations(content, ({ many }) => ({
   castCrew: many(castCrew),
   media: many(media),

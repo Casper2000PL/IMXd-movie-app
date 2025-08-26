@@ -16,7 +16,9 @@
 
     // Override root settings for shared
     "baseUrl": "./",
-    "paths": {} // Clear inherited paths
+    "paths": {
+      "@server/*": ["../server/*"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "../client/**/*", "../server/**/*"]

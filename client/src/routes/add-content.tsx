@@ -29,11 +29,21 @@ const formSchema = z.object({
   type: z.string().min(1, {
     message: "Please select a content type.",
   }),
-  description: z.string().optional(),
-  releaseDate: z.string().optional(),
-  runtime: z.string().optional(),
-  language: z.string().optional(),
-  status: z.string().optional(),
+  description: z.string().min(1, {
+    message: "Description is required.",
+  }),
+  releaseDate: z.string().min(1, {
+    message: "Release date is required.",
+  }),
+  runtime: z.string().min(1, {
+    message: "Runtime is required.",
+  }),
+  language: z.string().min(1, {
+    message: "Language is required.",
+  }),
+  status: z.string().min(1, {
+    message: "Status is required.",
+  }),
   numberOfSeasons: z.string().optional(),
   numberOfEpisodes: z.string().optional(),
 });

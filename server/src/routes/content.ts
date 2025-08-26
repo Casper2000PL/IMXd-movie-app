@@ -19,13 +19,13 @@ export const contentRouter = new Hono()
         .values({
           title: validatedData.title,
           type: validatedData.type,
-          description: validatedData.description || null,
-          releaseDate: validatedData.releaseDate || null,
-          runtime: validatedData.runtime || null,
-          language: validatedData.language || "en",
-          status: validatedData.status || "released",
-          numberOfEpisodes: validatedData.numberOfEpisodes || 0,
-          numberOfSeasons: validatedData.numberOfSeasons || 0,
+          description: validatedData.description,
+          releaseDate: validatedData.releaseDate,
+          runtime: validatedData.runtime,
+          language: validatedData.language,
+          status: validatedData.status,
+          numberOfEpisodes: validatedData.numberOfEpisodes || undefined,
+          numberOfSeasons: validatedData.numberOfSeasons || undefined,
         })
         .returning();
 
