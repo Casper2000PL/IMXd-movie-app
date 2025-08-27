@@ -45,7 +45,7 @@ export const content = pgTable(
   "content",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    title: varchar("title", { length: 255 }).notNull(),
+    title: varchar("title", { length: 255 }).unique().notNull(),
     type: contentTypeEnum("type").notNull(),
     description: text("description"),
     releaseDate: date("release_date"),

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { client } from "../../../server/src/client";
 
 export const getContent = async () => {
@@ -18,15 +17,15 @@ export const getContent = async () => {
 };
 
 interface CreateContentForm {
-  title: string | undefined;
-  type: string | undefined;
-  description: string | undefined;
-  releaseDate: string | undefined;
-  runtime: string | undefined;
-  language: string | undefined;
-  status: string | undefined;
-  numberOfSeasons?: string | undefined;
-  numberOfEpisodes?: string | undefined;
+  title: string;
+  type: string;
+  description: string;
+  releaseDate: string;
+  runtime: string;
+  language: string;
+  status: string;
+  numberOfSeasons?: string;
+  numberOfEpisodes?: string;
 }
 
 export const createContent = async (formData: CreateContentForm) => {
@@ -37,13 +36,13 @@ export const createContent = async (formData: CreateContentForm) => {
       form: {
         title: formData.title,
         type: formData.type,
-        description: formData.description || "",
-        releaseDate: formData.releaseDate || "",
-        runtime: formData.runtime || "",
-        language: formData.language || "en",
-        status: formData.status || "released",
-        numberOfSeasons: formData.numberOfSeasons || "",
-        numberOfEpisodes: formData.numberOfEpisodes || "",
+        description: formData.description,
+        releaseDate: formData.releaseDate,
+        runtime: formData.runtime,
+        language: formData.language,
+        status: formData.status,
+        numberOfSeasons: formData.numberOfSeasons,
+        numberOfEpisodes: formData.numberOfEpisodes,
       },
     });
 

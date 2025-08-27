@@ -14,6 +14,7 @@ import { Route as AddContentRouteImport } from './routes/add-content'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RegisterIndexRouteImport } from './routes/register/index'
+import { Route as ContentIdIndexRouteImport } from './routes/contentId/index'
 import { Route as RegisterSignUpRouteImport } from './routes/register/sign-up'
 import { Route as RegisterSignInRouteImport } from './routes/register/sign-in'
 
@@ -42,6 +43,11 @@ const RegisterIndexRoute = RegisterIndexRouteImport.update({
   path: '/',
   getParentRoute: () => RegisterRoute,
 } as any)
+const ContentIdIndexRoute = ContentIdIndexRouteImport.update({
+  id: '/contentId/',
+  path: '/contentId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegisterSignUpRoute = RegisterSignUpRouteImport.update({
   id: '/sign-up',
   path: '/sign-up',
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRouteWithChildren
   '/register/sign-in': typeof RegisterSignInRoute
   '/register/sign-up': typeof RegisterSignUpRoute
+  '/contentId': typeof ContentIdIndexRoute
   '/register/': typeof RegisterIndexRoute
 }
 export interface FileRoutesByTo {
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/add-content': typeof AddContentRoute
   '/register/sign-in': typeof RegisterSignInRoute
   '/register/sign-up': typeof RegisterSignUpRoute
+  '/contentId': typeof ContentIdIndexRoute
   '/register': typeof RegisterIndexRoute
 }
 export interface FileRoutesById {
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRouteWithChildren
   '/register/sign-in': typeof RegisterSignInRoute
   '/register/sign-up': typeof RegisterSignUpRoute
+  '/contentId/': typeof ContentIdIndexRoute
   '/register/': typeof RegisterIndexRoute
 }
 export interface FileRouteTypes {
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/register/sign-in'
     | '/register/sign-up'
+    | '/contentId'
     | '/register/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/add-content'
     | '/register/sign-in'
     | '/register/sign-up'
+    | '/contentId'
     | '/register'
   id:
     | '__root__'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/register/sign-in'
     | '/register/sign-up'
+    | '/contentId/'
     | '/register/'
   fileRoutesById: FileRoutesById
 }
@@ -114,6 +126,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AddContentRoute: typeof AddContentRoute
   RegisterRoute: typeof RegisterRouteWithChildren
+  ContentIdIndexRoute: typeof ContentIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -153,6 +166,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterIndexRouteImport
       parentRoute: typeof RegisterRoute
     }
+    '/contentId/': {
+      id: '/contentId/'
+      path: '/contentId'
+      fullPath: '/contentId'
+      preLoaderRoute: typeof ContentIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/register/sign-up': {
       id: '/register/sign-up'
       path: '/sign-up'
@@ -191,6 +211,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AddContentRoute: AddContentRoute,
   RegisterRoute: RegisterRouteWithChildren,
+  ContentIdIndexRoute: ContentIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

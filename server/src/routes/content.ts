@@ -2,7 +2,8 @@ import { db } from "db";
 import { content } from "db/schemas/system-schema";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { createContentSchema } from "@shared/schemas/content";
+// import { createContentSchema } from "@shared/schemas/content";
+import { createContentSchema } from "../../../shared/src/schemas/content";
 
 export const contentRouter = new Hono()
   .get("/", async (c) => {
@@ -41,4 +42,8 @@ export const contentRouter = new Hono()
         500
       );
     }
+  })
+  .post("/upload-file", async (c) => {
+    const contentData = "upload file endpoint";
+    return c.json(contentData);
   });

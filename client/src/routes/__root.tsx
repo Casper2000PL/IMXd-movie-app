@@ -15,7 +15,13 @@ function RootComponent() {
         <main className="flex h-full w-full justify-center">
           {/* This is where the nested routes will be rendered */}
           <Outlet />
-          <Toaster />
+          <Toaster
+            richColors
+            closeButton
+            containerAriaLabel="Notifications"
+            position="bottom-right"
+            duration={3000}
+          />
         </main>
       </div>
 
