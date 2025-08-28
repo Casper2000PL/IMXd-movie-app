@@ -17,9 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { createContent, getContent } from "@/lib/api";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { type FileRejection, useDropzone } from "react-dropzone";
@@ -27,6 +26,7 @@ import { FileIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { createContent } from "@/api/content";
 
 const formSchema = z.object({
   title: z.string().min(1, {
@@ -61,6 +61,8 @@ export const Route = createFileRoute("/add-content")({
 });
 
 function RouteComponent() {
+  const navigate = useNavigate();
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     console.log("Accepted files:", acceptedFiles);
   }, []);
@@ -115,25 +117,38 @@ function RouteComponent() {
   const watchedType = form.watch("type");
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    console.log("Values: ", values);
-    console.log("Values.title: ", values.title);
+    try {
+      console.log("Values: ", values);
+      console.log("Values.title: ", values.title);
 
-    const form = {
-      title: values.title,
-      type: values.type,
-      description: values.description,
-      releaseDate: values.releaseDate,
-      runtime: values.runtime,
-      language: values.language,
-      status: values.status,
-      numberOfSeasons: values.numberOfSeasons,
-      numberOfEpisodes: values.numberOfEpisodes,
-    };
+      const formData = {
+        title: values.title,
+        type: values.type,
+        description: values.description,
+        releaseDate: values.releaseDate,
+        runtime: values.runtime,
+        language: values.language,
+        status: values.status,
+        numberOfSeasons: values.numberOfSeasons,
+        numberOfEpisodes: values.numberOfEpisodes,
+      };
 
-    await createContent(form);
+      // Create the content and get the response with the ID
+      const createdContent = await createContent(formData);
+      console.log("Created content:", createdContent);
 
-    const content = await getContent();
-    console.log("Content: ", content);
+      // Show success message
+      toast.success("Content created successfully!");
+
+      // Navigate to the content detail page with the ID
+      await navigate({
+        to: `/contentId/${createdContent.id}`,
+        params: { contentId: createdContent.id },
+      });
+    } catch (error) {
+      console.error("Error creating content:", error);
+      toast.error("Failed to create content. Please try again.");
+    }
   };
 
   return (
@@ -182,78 +197,6 @@ function RouteComponent() {
                 </div>
               </div>
             </div>
-
-            {/* Poster - Updated with proper file upload */}
-            {/* <FormField
-              control={form.control}
-              name="poster"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Poster *</FormLabel>
-                  <FormControl>
-                    <div className="space-y-4">
-                      {
-                      <Input
-                        type="file"
-                        accept="image/jpeg,image/png,image/jpg"
-                        className="hidden"
-                        id="poster-upload"
-                        onChange={handleFileChange}
-                        ref={field.ref}
-                      />
-
-                
-                      <label
-                        htmlFor="poster-upload"
-                        className="group border-custom-yellow-300 hover:bg-custom-yellow-100/30 flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 transition-colors hover:border-gray-300"
-                      >
-                        <FileIcon className="text-custom-yellow-100 h-8 w-8 group-hover:text-gray-400" />
-                        <div className="text-center">
-                          <p className="text-sm font-medium text-gray-900">
-                            Click to upload poster
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            PNG, JPG up to 5MB
-                          </p>
-                        </div>
-                      </label>
-
-                   
-                      {posterValue?.[0] && (
-                        <div className="rounded-md bg-stone-300/30 p-3">
-                          <p className="text-base font-medium text-black">
-                            Selected file: {posterValue[0].name}
-                          </p>
-                          <p className="text-muted-foreground text-sm">
-                            {(posterValue[0].size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                          <button
-                            type="button"
-                            onClick={clearFile}
-                            className="bg-destructive hover:bg-destructive/70 mt-5 flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-white transition duration-200"
-                          >
-                            <Trash2Icon className="size-4" /> Remove file
-                          </button>
-                        </div>
-                      )}
-
-                     
-                      {preview && (
-                        <div className="relative mt-4">
-                          <p className="mb-2 text-sm font-medium">Preview:</p>
-                          <img
-                            src={preview}
-                            alt="Poster preview"
-                            className="h-50 rounded border object-cover"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            /> */}
 
             {/* Content Type */}
             <FormField

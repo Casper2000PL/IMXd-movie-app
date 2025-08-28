@@ -5,6 +5,7 @@ import { authMiddleware } from "./middleware";
 import { db } from "db";
 import { content } from "../db/schemas/system-schema";
 import { contentRouter } from "./routes/content";
+import { mediaRouter } from "./routes/media";
 
 export const app = new Hono<{ Variables: AuthType }>()
   .get("/user-info", authMiddleware, (c) => {
@@ -43,7 +44,10 @@ app.get("/session", (c) => {
 });
 
 // Apply basePath and routes
-const routes = app.basePath("/api").route("/content", contentRouter);
+const routes = app
+  .basePath("/api")
+  .route("/content", contentRouter)
+  .route("/media", mediaRouter);
 
 // Export the type after all routes are defined
 export type AppType = typeof routes;

@@ -26,11 +26,8 @@ export const roleEnum = pgEnum("role", [
 export const mediaTypeEnum = pgEnum("media_type", ["image", "video"]);
 export const mediaCategoryEnum = pgEnum("media_category", [
   "poster",
-  "backdrop",
   "trailer",
-  "teaser",
   "clip",
-  "still",
 ]);
 export const statusEnum = pgEnum("status", [
   "released",
@@ -112,7 +109,7 @@ export const castCrew = pgTable(
   ]
 );
 
-// Media table
+// Media table (simplified)
 export const media = pgTable(
   "media",
   {
@@ -124,18 +121,13 @@ export const media = pgTable(
     type: mediaTypeEnum("type").notNull(),
     mediaCategory: mediaCategoryEnum("media_category").notNull(),
     title: varchar("title", { length: 255 }),
-    width: integer("width"),
-    height: integer("height"),
     fileSize: bigint("file_size", { mode: "number" }), // File size in bytes
-    duration: integer("duration"), // For videos - duration in seconds
-    isPrimary: boolean("is_primary").default(false),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
   },
   (table) => [
     index("media_content_type_idx").on(table.contentId, table.type),
     index("media_category_idx").on(table.mediaCategory),
-    index("media_primary_idx").on(table.contentId, table.isPrimary),
   ]
 );
 

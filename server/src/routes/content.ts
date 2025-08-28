@@ -4,11 +4,36 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 // import { createContentSchema } from "@shared/schemas/content";
 import { createContentSchema } from "../../../shared/src/schemas/content";
+import { eq } from "drizzle-orm";
 
 export const contentRouter = new Hono()
   .get("/", async (c) => {
     const contentData = await db.select().from(content);
     return c.json(contentData);
+  })
+  .get("/:id", async (c) => {
+    try {
+      const id = c.req.param("id");
+      const contentData = await db
+        .select()
+        .from(content)
+        .where(eq(content.id, id));
+
+      if (contentData.length === 0) {
+        return c.json({ error: "Content not found" }, 404);
+      }
+
+      return c.json(contentData[0]);
+    } catch (error) {
+      console.error("Error fetching content by ID:", error);
+      return c.json(
+        {
+          error: "Failed to fetch content",
+          details: error,
+        },
+        500
+      );
+    }
   })
   .post("/", zValidator("form", createContentSchema), async (c) => {
     try {

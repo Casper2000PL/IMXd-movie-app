@@ -1,26 +1,58 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { getContentById } from "@/api/content";
+import { getMediaByContentId } from "@/api/media";
 import PosterCard from "@/components/poster-card";
 import { Separator } from "@/components/ui/separator";
 import { mockDb } from "@/lib/images-data";
+import { extractYearFromDate, formatRuntime } from "@/utils/dateUtils";
 
-import { Link } from "@tanstack/react-router";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ChevronRightIcon,
   ClapperboardIcon,
   ImageIcon,
   PlusIcon,
+  StarIcon,
   TrendingUpIcon,
   TriangleIcon,
 } from "lucide-react";
 
-export const Route = createFileRoute("/contentId/")({
+export const Route = createFileRoute("/contentId/$contentId")({
+  loader: async ({ params }) => {
+    const [contentData, mediaData] = await Promise.all([
+      getContentById(params.contentId),
+      getMediaByContentId(params.contentId),
+    ]);
+
+    return {
+      content: contentData,
+      media: mediaData,
+    };
+  },
   component: RouteComponent,
 });
 
 function RouteComponent() {
+  const { content, media } = Route.useLoaderData();
+  const { contentId } = Route.useParams();
+
+  console.log("contentId: ", contentId);
+
+  console.log("Content: ", content);
+
+  console.log("Media: ", media);
+
+  const videos = media.filter((m) => m.type === "video");
+  const posters = media.filter((m) => m.mediaCategory === "poster");
+  const images = media.filter((m) => m.type === "image");
+
+  console.log("Videos: ", videos);
+  console.log("Posters: ", posters);
+
   const firstMovie = mockDb[0];
   const image = firstMovie.images[0];
-  console.log("firstMovie: ", firstMovie.title);
+
+  const isMediaEmpty = media.length === 0;
 
   return (
     <div className="relative w-full">
@@ -49,36 +81,65 @@ function RouteComponent() {
           <div className="flex w-full justify-between">
             <div>
               <h1 className="font-roboto text-5xl text-white">
-                {firstMovie.title}
+                {content.title}
               </h1>
               <div className="mt-1 flex items-center gap-[6px] font-sans text-sm text-stone-400">
-                <span>2020</span>
+                <span>{extractYearFromDate(content.releaseDate)}</span>
                 <div className="bg-muted-foreground size-[3px] rounded-full" />
-                <span>2h 4m</span>
+                <span>{content.runtime && formatRuntime(content.runtime)}</span>
               </div>
             </div>
-            <div className="flex flex-col items-center">
-              <p className="text-center font-sans text-sm font-semibold tracking-wider text-stone-400">
-                POPULARITY
-              </p>
-              {/* ranking button */}
-              <button className="flex cursor-pointer gap-2.5 rounded-full px-2.5 py-1 transition-all duration-200 hover:bg-white/10">
-                <div className="flex items-center gap-1.5">
-                  <TrendingUpIcon className="size-6 text-green-500" />
-                  <span className="font-roboto text-xl font-bold text-white">
-                    1,234
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <TriangleIcon
-                    className="size-2 text-[#A1A1A1]"
-                    fill="#A1A1A1"
-                  />
-                  <p className="font-roboto text-base font-medium text-stone-400">
-                    4,567
-                  </p>
-                </div>
-              </button>
+            <div className="flex gap-1.5">
+              {/* rating */}
+              <div className="flex flex-col items-center gap-0.5">
+                <p className="text-center font-sans text-sm font-semibold tracking-wider text-stone-400">
+                  IMXd RATING
+                </p>
+                {/* rating button */}
+                <button className="flex cursor-pointer justify-between rounded-full px-4 py-[1px] transition-all duration-200 hover:bg-white/10">
+                  <div className="flex items-center gap-2.5">
+                    <StarIcon
+                      className="size-6 text-yellow-500"
+                      fill="currentColor"
+                    />
+                    <div className="flex flex-col">
+                      <span className="font-roboto text-lg font-bold text-white">
+                        {content.rating}
+                        <span className="text-base font-normal text-stone-400">
+                          /10
+                        </span>
+                      </span>
+                      <span className="font-roboto text-[10px] font-bold text-stone-400">
+                        0 REVIEWS
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              </div>
+              {/* stats */}
+              <div className="flex flex-col items-center gap-0.5">
+                <p className="text-center font-sans text-sm font-semibold tracking-wider text-stone-400">
+                  POPULARITY
+                </p>
+                {/* ranking button */}
+                <button className="flex cursor-pointer gap-2.5 rounded-full px-2.5 py-1 transition-all duration-200 hover:bg-white/10">
+                  <div className="flex items-center gap-1.5">
+                    <TrendingUpIcon className="size-6 text-green-500" />
+                    <span className="font-roboto text-xl font-bold text-white">
+                      1,234
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <TriangleIcon
+                      className="size-2 text-[#A1A1A1]"
+                      fill="#A1A1A1"
+                    />
+                    <p className="font-roboto text-base font-medium text-stone-400">
+                      4,567
+                    </p>
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -86,20 +147,42 @@ function RouteComponent() {
           <div className="mt-3 w-full">
             <div className="flex h-100 w-full gap-1">
               <div className="flex-1">
-                <PosterCard
-                  poster={firstMovie.poster}
-                  className="h-full w-full"
-                  withRibbon
-                />
+                {isMediaEmpty ? (
+                  <button className="h-full w-full cursor-pointer rounded-md bg-gray-800 transition-all duration-200 hover:bg-white/20">
+                    <div className="flex flex-col items-center justify-center gap-4">
+                      <p className="font-sans text-xl font-semibold text-white">
+                        Add posters
+                      </p>
+                      <PlusIcon className="size-8 text-white" />
+                    </div>
+                  </button>
+                ) : (
+                  <PosterCard
+                    poster={firstMovie.poster}
+                    className="h-full w-full"
+                    withRibbon
+                  />
+                )}
               </div>
               <div className="flex-3">
-                <iframe
-                  className="h-full w-full rounded-md"
-                  src="https://www.youtube.com/embed/5L8intrDcM0?autoplay=1&mute=1&controls=0&loop=1&playlist=5L8intrDcM0"
-                  title="YouTube video player"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                ></iframe>
+                {isMediaEmpty ? (
+                  <button className="h-full w-full cursor-pointer rounded-md bg-gray-800 transition-all duration-200 hover:bg-white/20">
+                    <div className="flex flex-col items-center justify-center gap-4">
+                      <p className="font-sans text-xl font-semibold text-white">
+                        Add trailer
+                      </p>
+                      <PlusIcon className="size-8 text-white" />
+                    </div>
+                  </button>
+                ) : (
+                  <iframe
+                    className="h-full w-full rounded-md"
+                    src="https://www.youtube.com/embed/5L8intrDcM0?autoplay=1&mute=1&controls=0&loop=1&playlist=5L8intrDcM0"
+                    title="YouTube video player"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  ></iframe>
+                )}
               </div>
               <div className="flex flex-1 flex-col gap-1">
                 <Link
@@ -108,7 +191,7 @@ function RouteComponent() {
                 >
                   <ClapperboardIcon className="size-8 text-white" />
                   <p className="font-sans text-sm font-semibold text-white">
-                    VIDEOS
+                    <span>{videos.length}</span> VIDEOS
                   </p>
                 </Link>
                 <Link
@@ -117,7 +200,7 @@ function RouteComponent() {
                 >
                   <ImageIcon className="size-8 text-white" />
                   <p className="font-sans text-sm font-semibold text-white">
-                    PHOTOS
+                    <span>{images.length}</span> PHOTOS
                   </p>
                 </Link>
               </div>
@@ -145,10 +228,7 @@ function RouteComponent() {
                 </div>
                 {/* Description */}
                 <div className="font-medium text-white">
-                  Follows headteacher Steve battling for his reform college's
-                  survival while managing his mental health. Concurrently,
-                  troubled student Shy navigates his violent tendencies and
-                  fragility, torn between his past and future prospects.
+                  {content.description}
                 </div>
                 {/* Creators and Cast */}
                 <div className="my-3 flex flex-col">
@@ -178,20 +258,15 @@ function RouteComponent() {
                     <p className="font-sans text-base font-semibold text-white">
                       Stars
                     </p>
-                    <Link to="/" className="text-blue-400 hover:underline">
+                    <p className="text-blue-400 hover:underline">
                       Cillian Murphy
-                    </Link>
+                    </p>
                     <div className="size-[3px] rounded-full bg-white" />
-                    <Link to="/" className="text-blue-400 hover:underline">
+                    <p className="text-blue-400 hover:underline">
                       Tracey Ullman
-                    </Link>
+                    </p>
                     <div className="size-[3px] rounded-full bg-white" />
-                    <Link
-                      to="/add-content"
-                      className="text-blue-400 hover:underline"
-                    >
-                      Jay Lycurgo
-                    </Link>
+                    <p className="text-blue-400 hover:underline">Jay Lycurgo</p>
                     <ChevronRightIcon
                       className="group-hover:text-custom-yellow-300 mr-0.5 ml-auto size-5 justify-self-end text-white"
                       strokeWidth={2}
@@ -231,7 +306,7 @@ function RouteComponent() {
             </div>
           </div>
         </div>
-      </div>{" "}
+      </div>
       {/* Second Section */}
       <div className="h-[300px] w-full bg-blue-400"></div>
     </div>
