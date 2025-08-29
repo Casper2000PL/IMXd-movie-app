@@ -9,8 +9,8 @@ import { ChevronDownIcon, CircleUserRoundIcon } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { authClient } from "@/lib/auth-client";
 
-const Navbar = async () => {
-  const { data: session } = await authClient.useSession();
+const Navbar = () => {
+  const { data: session } = authClient.useSession();
   const isLoggedIn = !!session;
   console.log("isLoggedIn: ", isLoggedIn);
 

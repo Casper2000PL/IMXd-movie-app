@@ -1,21 +1,33 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { getContentById } from "@/api/content";
 import { getMediaByContentId } from "@/api/media";
 import PosterCard from "@/components/poster-card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { mockDb } from "@/lib/images-data";
+import { cn } from "@/lib/utils";
 import { extractYearFromDate, formatRuntime } from "@/utils/dateUtils";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+  CameraIcon,
   ChevronRightIcon,
   ClapperboardIcon,
   ImageIcon,
+  ImagesIcon,
   PlusIcon,
   StarIcon,
   TrendingUpIcon,
   TriangleIcon,
 } from "lucide-react";
+import { useCallback } from "react";
+import { type FileRejection, useDropzone } from "react-dropzone";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/contentId/$contentId")({
   loader: async ({ params }) => {
@@ -35,6 +47,88 @@ export const Route = createFileRoute("/contentId/$contentId")({
 function RouteComponent() {
   const { content, media } = Route.useLoaderData();
   const { contentId } = Route.useParams();
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    console.log("Accepted poster files:", acceptedFiles);
+  }, []);
+
+  const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
+    if (fileRejections.length > 0) {
+      const tooManyFiles = fileRejections.find(
+        (fileRejection) => fileRejection.errors[0].code === "too-many-files",
+      );
+
+      const fileTooLarge = fileRejections.find(
+        (fileRejection) => fileRejection.errors[0].code === "file-too-large",
+      );
+
+      if (tooManyFiles) {
+        toast.error("You can upload up to 5 files at a time.");
+      }
+
+      if (fileTooLarge) {
+        toast.error("Each file must be less than 5MB.");
+      }
+    }
+
+    console.log("Rejected poster files:", fileRejections);
+  }, []);
+
+  // Second dropzone handlers for other images
+  const onDropOtherImages = useCallback((acceptedFiles: File[]) => {
+    console.log("Accepted other image files:", acceptedFiles);
+  }, []);
+
+  const onDropRejectedOtherImages = useCallback(
+    (fileRejections: FileRejection[]) => {
+      if (fileRejections.length > 0) {
+        const tooManyFiles = fileRejections.find(
+          (fileRejection) => fileRejection.errors[0].code === "too-many-files",
+        );
+
+        const fileTooLarge = fileRejections.find(
+          (fileRejection) => fileRejection.errors[0].code === "file-too-large",
+        );
+
+        if (tooManyFiles) {
+          toast.error("You can upload up to 10 files at a time.");
+        }
+
+        if (fileTooLarge) {
+          toast.error("Each file must be less than 5MB.");
+        }
+      }
+
+      console.log("Rejected other image files:", fileRejections);
+    },
+    [],
+  );
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    onDropRejected,
+    maxFiles: 5,
+    maxSize: 5 * 1024 * 1024, // 5MB
+    accept: {
+      "image/*": [],
+    },
+  });
+
+  const {
+    getRootProps: getRootPropsOther,
+    getInputProps: getInputPropsOther,
+    isDragActive: isDragActiveOther,
+  } = useDropzone({
+    onDrop: onDropOtherImages,
+    onDropRejected: onDropRejectedOtherImages,
+    maxFiles: 10,
+    maxSize: 5 * 1024 * 1024, // 5MB
+    accept: {
+      "image/*": [],
+    },
+  });
+
+  console.log("Dropzone props:", { getRootProps, getInputProps, isDragActive });
 
   console.log("contentId: ", contentId);
 
@@ -147,15 +241,100 @@ function RouteComponent() {
           <div className="mt-3 w-full">
             <div className="flex h-100 w-full gap-1">
               <div className="flex-1">
-                {isMediaEmpty ? (
-                  <button className="h-full w-full cursor-pointer rounded-md bg-gray-800 transition-all duration-200 hover:bg-white/20">
-                    <div className="flex flex-col items-center justify-center gap-4">
-                      <p className="font-sans text-xl font-semibold text-white">
-                        Add posters
-                      </p>
-                      <PlusIcon className="size-8 text-white" />
-                    </div>
-                  </button>
+                {posters.length === 0 ? (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button className="h-full w-full cursor-pointer rounded-md bg-gray-800 transition-all duration-200 hover:bg-white/20">
+                        <div className="flex flex-col items-center justify-center gap-4">
+                          <p className="font-sans text-xl font-semibold text-white">
+                            Add posters
+                          </p>
+                          <PlusIcon className="size-8 text-white" />
+                        </div>
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="flex h-full !w-full !max-w-full flex-col overflow-y-scroll rounded-none border-none bg-gray-800 px-2 text-white outline-none md:px-4 xl:px-10">
+                      <DialogHeader>
+                        <DialogTitle className="mb-8 text-center">
+                          Add Posters and Other Images
+                        </DialogTitle>
+
+                        {/* First Dropzone - Posters */}
+                        <div className="mb-6">
+                          <h3 className="mb-4 text-lg font-semibold text-white">
+                            Upload Posters
+                          </h3>
+                          <div
+                            className={cn(
+                              isDragActive
+                                ? "bg-custom-yellow-100/30 border-solid"
+                                : "bg-custom-yellow-100/10 border-dashed",
+                              "group border-custom-yellow-300 hover:bg-custom-yellow-100/20 w-full cursor-pointer rounded-xl border-2 py-10 transition duration-200",
+                            )}
+                            {...getRootProps()}
+                          >
+                            <input {...getInputProps()} />
+                            <div className="flex w-full flex-col items-center justify-center">
+                              <ImagesIcon
+                                className={cn(
+                                  isDragActive
+                                    ? "text-amber-200"
+                                    : "text-custom-yellow-100",
+                                  "size-8 duration-100 group-hover:text-amber-200",
+                                )}
+                              />
+                              <div className="mt-4 text-center">
+                                <p className="mb-0.5 text-sm font-medium text-white">
+                                  Click or drag poster images to upload
+                                </p>
+                                <p className="text-xs text-stone-400">
+                                  PNG, JPG up to 5MB (max 5 files)
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Second Dropzone - Other Images */}
+                        <div>
+                          <h3 className="mb-4 text-lg font-semibold text-white">
+                            Upload Other Images
+                          </h3>
+                          <div
+                            className={cn(
+                              isDragActiveOther
+                                ? "border-solid bg-blue-500/30"
+                                : "border-dashed bg-blue-500/10",
+                              "group w-full cursor-pointer rounded-xl border-2 border-blue-400 py-10 transition duration-200 hover:bg-blue-500/20",
+                            )}
+                            {...getRootPropsOther()}
+                          >
+                            <input {...getInputPropsOther()} />
+                            <div className="flex w-full flex-col items-center justify-center">
+                              <CameraIcon
+                                className={cn(
+                                  isDragActiveOther
+                                    ? "text-blue-200"
+                                    : "text-blue-400",
+                                  "size-8 duration-100 group-hover:text-blue-200",
+                                )}
+                              />
+                              <div className="mt-4 text-center">
+                                <p className="mb-0.5 text-sm font-medium text-white">
+                                  Click or drag other images to upload
+                                </p>
+                                <p className="text-xs text-stone-400">
+                                  PNG, JPG up to 5MB (max 10 files)
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="h-200 w-full bg-white/30"></div>
+                      </DialogHeader>
+                    </DialogContent>
+                  </Dialog>
                 ) : (
                   <PosterCard
                     poster={firstMovie.poster}

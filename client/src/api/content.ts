@@ -33,12 +33,12 @@ export interface ContentWithMedia {
 
 export interface CreateContentForm {
   title: string;
-  type: ContentType;
+  type: string;
   description: string;
   releaseDate: string;
   runtime: string;
   language: string;
-  status: StatusType;
+  status: string;
   numberOfSeasons?: string;
   numberOfEpisodes?: string;
 }
