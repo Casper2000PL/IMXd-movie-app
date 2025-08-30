@@ -1,6 +1,8 @@
 import { getContentById } from "@/api/content";
+import { s3FileDelete, s3FileUpload } from "@/api/file";
 import { getMediaByContentId } from "@/api/media";
 import PosterCard from "@/components/poster-card";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -20,14 +22,17 @@ import {
   ClapperboardIcon,
   ImageIcon,
   ImagesIcon,
+  Loader,
   PlusIcon,
   StarIcon,
+  Trash2Icon,
   TrendingUpIcon,
   TriangleIcon,
 } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
 import { toast } from "sonner";
+import { v4 as uuidv4 } from "uuid";
 
 export const Route = createFileRoute("/contentId/$contentId")({
   loader: async ({ params }) => {
@@ -48,8 +53,178 @@ function RouteComponent() {
   const { content, media } = Route.useLoaderData();
   const { contentId } = Route.useParams();
 
+  const [posters, setPosters] = useState<
+    Array<{
+      id: string;
+      file: File;
+      uploading: boolean;
+      progress: number;
+      key?: string;
+      isDeleting: boolean;
+      error: boolean;
+      objectUrl?: string;
+    }>
+  >([]);
+
+  async function removeFile(fileId: string) {
+    try {
+      const fileToRemove = posters.find((f) => f.id === fileId);
+
+      if (fileToRemove) {
+        if (fileToRemove.objectUrl) {
+          URL.revokeObjectURL(fileToRemove.objectUrl);
+        }
+      }
+
+      setPosters((prevFiles) =>
+        prevFiles.map((f) =>
+          f.id === fileId ? { ...f, isDeleting: true } : f,
+        ),
+      );
+
+      if (!fileToRemove?.key) {
+        throw new Error("File key is missing");
+      }
+
+      const deleteFileResponse = await s3FileDelete(fileToRemove?.key);
+
+      if (!deleteFileResponse.ok) {
+        toast.error("Failed to remove file from storage.");
+
+        setPosters((prevFiles) =>
+          prevFiles.map((f) =>
+            f.id === fileId ? { ...f, isDeleting: false, error: true } : f,
+          ),
+        );
+        return;
+      }
+
+      toast.success("File removed successfully");
+      setPosters((prevFiles) => prevFiles.filter((f) => f.id !== fileId));
+    } catch (error) {
+      console.log("Error in removeFile:", error);
+      toast.error("Failed to remove file from storage.");
+      setPosters((prevFiles) =>
+        prevFiles.map((f) =>
+          f.id === fileId ? { ...f, isDeleting: false, error: true } : f,
+        ),
+      );
+    }
+  }
+
+  const uploadFile = async (file: File) => {
+    setPosters((prevFiles) =>
+      prevFiles.map((f) =>
+        f.file === file ? { ...f, uploading: true, progress: 0 } : f,
+      ),
+    );
+
+    try {
+      // Get presigned URL from your API
+      const presignedUrlResponse = await s3FileUpload(file);
+
+      if (!presignedUrlResponse.ok) {
+        toast.error("Failed to get presigned URL");
+        setPosters((prevPosters) =>
+          prevPosters.map((p) =>
+            p.file === file
+              ? { ...p, uploading: false, progress: 0, error: true }
+              : p,
+          ),
+        );
+        return;
+      }
+
+      const { presignedUrl, key } = await presignedUrlResponse.json();
+
+      // Upload to S3 using the presigned URL
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percentageCompleted = Math.round(
+              (event.loaded / event.total) * 100,
+            );
+            setPosters((prevPosters) =>
+              prevPosters.map((p) =>
+                p.file === file
+                  ? { ...p, progress: percentageCompleted, key }
+                  : p,
+              ),
+            );
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            setPosters((prevPosters) =>
+              prevPosters.map((p) =>
+                p.file === file
+                  ? { ...p, uploading: false, progress: 100, error: false, key }
+                  : p,
+              ),
+            );
+            toast.success("File uploaded successfully");
+            resolve();
+          } else {
+            console.error(
+              `Upload failed with status ${xhr.status}`,
+              xhr.responseText,
+            );
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        };
+
+        xhr.onerror = (error) => {
+          console.error("Upload error:", error);
+          reject(new Error("Upload failed due to network error"));
+        };
+
+        // Configure the request
+        xhr.open("PUT", presignedUrl);
+        xhr.setRequestHeader("Content-Type", file.type);
+
+        // Send the file
+        xhr.send(file);
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error(
+        `Error uploading file: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+      setPosters((prevPosters) =>
+        prevPosters.map((p) =>
+          p.file === file
+            ? { ...p, uploading: false, progress: 0, error: true }
+            : p,
+        ),
+      );
+    }
+  };
+
+  // First dropzone for posters
   const onDrop = useCallback((acceptedFiles: File[]) => {
     console.log("Accepted poster files:", acceptedFiles);
+
+    if (acceptedFiles.length > 0) {
+      setPosters((prevPosters) => [
+        ...prevPosters,
+        ...acceptedFiles.map((file) => ({
+          id: uuidv4(),
+          file,
+          uploading: false,
+          progress: 0,
+          isDeleting: false,
+          error: false,
+          objectUrl: URL.createObjectURL(file),
+        })),
+      ]);
+    }
+
+    acceptedFiles.forEach((file) => {
+      uploadFile(file);
+    });
   }, []);
 
   const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
@@ -137,11 +312,11 @@ function RouteComponent() {
   console.log("Media: ", media);
 
   const videos = media.filter((m) => m.type === "video");
-  const posters = media.filter((m) => m.mediaCategory === "poster");
+  const postersImages = media.filter((m) => m.mediaCategory === "poster");
   const images = media.filter((m) => m.type === "image");
 
   console.log("Videos: ", videos);
-  console.log("Posters: ", posters);
+  console.log("Posters: ", postersImages);
 
   const firstMovie = mockDb[0];
   const image = firstMovie.images[0];
@@ -241,7 +416,7 @@ function RouteComponent() {
           <div className="mt-3 w-full">
             <div className="flex h-100 w-full gap-1">
               <div className="flex-1">
-                {posters.length === 0 ? (
+                {postersImages.length === 0 ? (
                   <Dialog>
                     <DialogTrigger asChild>
                       <button className="h-full w-full cursor-pointer rounded-md bg-gray-800 transition-all duration-200 hover:bg-white/20">
@@ -295,6 +470,58 @@ function RouteComponent() {
                           </div>
                         </div>
 
+                        {/* Rendering uploaded posters  */}
+                        <div className="mb-6 grid grid-cols-5 gap-4">
+                          {posters.map((poster) => (
+                            <div
+                              key={poster.id}
+                              className="flex flex-col gap-1"
+                            >
+                              <div className="relative aspect-square overflow-hidden rounded-lg">
+                                <img
+                                  src={poster.objectUrl}
+                                  alt={`${poster.file.name}`}
+                                  className="h-full w-full object-cover"
+                                />
+                                <Button
+                                  variant="destructive"
+                                  size="icon"
+                                  className="absolute top-2 right-2"
+                                  onClick={() => removeFile(poster.id)}
+                                  disabled={
+                                    poster.uploading || poster.isDeleting
+                                  }
+                                >
+                                  {poster.isDeleting ? (
+                                    <Loader className="animate-spin" />
+                                  ) : (
+                                    <Trash2Icon className="size-4" />
+                                  )}
+                                </Button>
+                                {poster.uploading && !poster.isDeleting && (
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50">
+                                    <p className="font-sans font-medium text-white">
+                                      {poster.progress}%
+                                    </p>
+                                    <Loader className="size-4 animate-spin" />
+                                  </div>
+                                )}
+
+                                {poster.error && (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-red-500/50">
+                                    <p className="font-medium text-white">
+                                      Error
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                              <p className="text-muted-foreground truncate px-1 text-sm">
+                                {poster.file.name}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+
                         {/* Second Dropzone - Other Images */}
                         <div>
                           <h3 className="mb-4 text-lg font-semibold text-white">
@@ -330,8 +557,6 @@ function RouteComponent() {
                             </div>
                           </div>
                         </div>
-
-                        <div className="h-200 w-full bg-white/30"></div>
                       </DialogHeader>
                     </DialogContent>
                   </Dialog>
