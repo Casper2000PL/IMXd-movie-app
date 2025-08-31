@@ -12,6 +12,22 @@ export interface Media {
   updatedAt: string;
 }
 
+export const getMedia = async (): Promise<Media[]> => {
+  try {
+    const response = await client.api.media.$get();
+
+    if (response.ok) {
+      const data = await response.json();
+      return data;
+    } else {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Error fetching media:", error);
+    throw error;
+  }
+};
+
 export const getMediaByContentId = async (
   contentId: string,
 ): Promise<Media[]> => {

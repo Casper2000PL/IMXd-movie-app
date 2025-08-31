@@ -1,0 +1,1 @@
+ALTER TYPE "public"."media_category" ADD VALUE 'gallery_image' BEFORE 'trailer';

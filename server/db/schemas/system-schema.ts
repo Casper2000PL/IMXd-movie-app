@@ -26,6 +26,7 @@ export const roleEnum = pgEnum("role", [
 export const mediaTypeEnum = pgEnum("media_type", ["image", "video"]);
 export const mediaCategoryEnum = pgEnum("media_category", [
   "poster",
+  "gallery_image",
   "trailer",
   "clip",
 ]);

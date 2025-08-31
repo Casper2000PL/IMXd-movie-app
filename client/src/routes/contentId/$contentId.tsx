@@ -34,6 +34,7 @@ import { type FileRejection, useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
+// ✅ Dynamic route definition with $contentId parameter
 export const Route = createFileRoute("/contentId/$contentId")({
   loader: async ({ params }) => {
     const [contentData, mediaData] = await Promise.all([
@@ -46,10 +47,10 @@ export const Route = createFileRoute("/contentId/$contentId")({
       media: mediaData,
     };
   },
-  component: RouteComponent,
+  component: ContentDetailComponent,
 });
 
-function RouteComponent() {
+function ContentDetailComponent() {
   const { content, media } = Route.useLoaderData();
   const { contentId } = Route.useParams();
 
@@ -66,9 +67,126 @@ function RouteComponent() {
     }>
   >([]);
 
-  async function removeFile(fileId: string) {
+  const [otherImages, setOtherImages] = useState<
+    Array<{
+      id: string;
+      file: File;
+      uploading: boolean;
+      progress: number;
+      key?: string;
+      isDeleting: boolean;
+      error: boolean;
+      objectUrl?: string;
+    }>
+  >([]);
+
+  // Enhanced uploadFile function with better error handling
+  const uploadFile = useCallback(
+    async (file: File, isPoster: boolean = true) => {
+      const setFiles = isPoster ? setPosters : setOtherImages;
+
+      setFiles((prevFiles) =>
+        prevFiles.map((f) =>
+          f.file === file ? { ...f, uploading: true, progress: 0 } : f,
+        ),
+      );
+
+      try {
+        // Get presigned URL from your API
+        const presignedUrlResponse = await s3FileUpload({
+          file,
+          mediaCategory: isPoster ? "poster" : "gallery_image",
+          contentTitle: content.title,
+          contentId: content.id,
+          type: "image",
+        });
+
+        const { presignedUrl, key } = await presignedUrlResponse.json();
+
+        // Upload to S3 using the presigned URL
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percentageCompleted = Math.round(
+                (event.loaded / event.total) * 100,
+              );
+              setFiles((prevFiles) =>
+                prevFiles.map((p) =>
+                  p.file === file
+                    ? { ...p, progress: percentageCompleted, key }
+                    : p,
+                ),
+              );
+            }
+          };
+
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              setFiles((prevFiles) =>
+                prevFiles.map((p) =>
+                  p.file === file
+                    ? {
+                        ...p,
+                        uploading: false,
+                        progress: 100,
+                        error: false,
+                        key,
+                      }
+                    : p,
+                ),
+              );
+              toast.success("File uploaded successfully");
+              resolve();
+            } else {
+              console.error(
+                `Upload failed with status ${xhr.status}`,
+                xhr.responseText,
+              );
+              reject(new Error(`Upload failed with status ${xhr.status}`));
+            }
+          };
+
+          xhr.onerror = (error) => {
+            console.error("Upload error:", error);
+            reject(new Error("Upload failed due to network error"));
+          };
+
+          // Configure the request
+          xhr.open("PUT", presignedUrl);
+          xhr.setRequestHeader("Content-Type", file.type);
+
+          // Send the file
+          xhr.send(file);
+        });
+      } catch (error) {
+        console.error("Upload error:", error);
+
+        // The error message is now properly extracted from the API response
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error occurred";
+        toast.error(errorMessage);
+
+        setFiles((prevFiles) =>
+          prevFiles.map((p) =>
+            p.file === file
+              ? { ...p, uploading: false, progress: 0, error: true }
+              : p,
+          ),
+        );
+      }
+    },
+    [content.title, content.id],
+  );
+
+  // Enhanced removeFile function with better error handling
+  async function removeFile(fileId: string, isPoster: boolean = true) {
+    const setFiles = isPoster ? setPosters : setOtherImages;
+    const files = isPoster ? posters : otherImages;
+
     try {
-      const fileToRemove = posters.find((f) => f.id === fileId);
+      const fileToRemove = files.find((f) => f.id === fileId);
 
       if (fileToRemove) {
         if (fileToRemove.objectUrl) {
@@ -76,7 +194,7 @@ function RouteComponent() {
         }
       }
 
-      setPosters((prevFiles) =>
+      setFiles((prevFiles) =>
         prevFiles.map((f) =>
           f.id === fileId ? { ...f, isDeleting: true } : f,
         ),
@@ -86,25 +204,19 @@ function RouteComponent() {
         throw new Error("File key is missing");
       }
 
-      const deleteFileResponse = await s3FileDelete(fileToRemove?.key);
-
-      if (!deleteFileResponse.ok) {
-        toast.error("Failed to remove file from storage.");
-
-        setPosters((prevFiles) =>
-          prevFiles.map((f) =>
-            f.id === fileId ? { ...f, isDeleting: false, error: true } : f,
-          ),
-        );
-        return;
-      }
+      await s3FileDelete(fileToRemove.key);
 
       toast.success("File removed successfully");
-      setPosters((prevFiles) => prevFiles.filter((f) => f.id !== fileId));
+      setFiles((prevFiles) => prevFiles.filter((f) => f.id !== fileId));
     } catch (error) {
       console.log("Error in removeFile:", error);
-      toast.error("Failed to remove file from storage.");
-      setPosters((prevFiles) =>
+
+      // The error message is now properly extracted from the API response
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      toast.error(errorMessage);
+
+      setFiles((prevFiles) =>
         prevFiles.map((f) =>
           f.id === fileId ? { ...f, isDeleting: false, error: true } : f,
         ),
@@ -112,120 +224,32 @@ function RouteComponent() {
     }
   }
 
-  const uploadFile = async (file: File) => {
-    setPosters((prevFiles) =>
-      prevFiles.map((f) =>
-        f.file === file ? { ...f, uploading: true, progress: 0 } : f,
-      ),
-    );
+  // First dropzone for posters
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      console.log("Accepted poster files:", acceptedFiles);
 
-    try {
-      // Get presigned URL from your API
-      const presignedUrlResponse = await s3FileUpload(file);
-
-      if (!presignedUrlResponse.ok) {
-        toast.error("Failed to get presigned URL");
-        setPosters((prevPosters) =>
-          prevPosters.map((p) =>
-            p.file === file
-              ? { ...p, uploading: false, progress: 0, error: true }
-              : p,
-          ),
-        );
-        return;
+      if (acceptedFiles.length > 0) {
+        setPosters((prevPosters) => [
+          ...prevPosters,
+          ...acceptedFiles.map((file) => ({
+            id: uuidv4(),
+            file,
+            uploading: false,
+            progress: 0,
+            isDeleting: false,
+            error: false,
+            objectUrl: URL.createObjectURL(file),
+          })),
+        ]);
       }
 
-      const { presignedUrl, key } = await presignedUrlResponse.json();
-
-      // Upload to S3 using the presigned URL
-      await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const percentageCompleted = Math.round(
-              (event.loaded / event.total) * 100,
-            );
-            setPosters((prevPosters) =>
-              prevPosters.map((p) =>
-                p.file === file
-                  ? { ...p, progress: percentageCompleted, key }
-                  : p,
-              ),
-            );
-          }
-        };
-
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            setPosters((prevPosters) =>
-              prevPosters.map((p) =>
-                p.file === file
-                  ? { ...p, uploading: false, progress: 100, error: false, key }
-                  : p,
-              ),
-            );
-            toast.success("File uploaded successfully");
-            resolve();
-          } else {
-            console.error(
-              `Upload failed with status ${xhr.status}`,
-              xhr.responseText,
-            );
-            reject(new Error(`Upload failed with status ${xhr.status}`));
-          }
-        };
-
-        xhr.onerror = (error) => {
-          console.error("Upload error:", error);
-          reject(new Error("Upload failed due to network error"));
-        };
-
-        // Configure the request
-        xhr.open("PUT", presignedUrl);
-        xhr.setRequestHeader("Content-Type", file.type);
-
-        // Send the file
-        xhr.send(file);
+      acceptedFiles.forEach((file) => {
+        uploadFile(file, true);
       });
-    } catch (error) {
-      console.error("Upload error:", error);
-      toast.error(
-        `Error uploading file: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
-      setPosters((prevPosters) =>
-        prevPosters.map((p) =>
-          p.file === file
-            ? { ...p, uploading: false, progress: 0, error: true }
-            : p,
-        ),
-      );
-    }
-  };
-
-  // First dropzone for posters
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    console.log("Accepted poster files:", acceptedFiles);
-
-    if (acceptedFiles.length > 0) {
-      setPosters((prevPosters) => [
-        ...prevPosters,
-        ...acceptedFiles.map((file) => ({
-          id: uuidv4(),
-          file,
-          uploading: false,
-          progress: 0,
-          isDeleting: false,
-          error: false,
-          objectUrl: URL.createObjectURL(file),
-        })),
-      ]);
-    }
-
-    acceptedFiles.forEach((file) => {
-      uploadFile(file);
-    });
-  }, []);
+    },
+    [uploadFile],
+  );
 
   const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
     if (fileRejections.length > 0) {
@@ -250,9 +274,31 @@ function RouteComponent() {
   }, []);
 
   // Second dropzone handlers for other images
-  const onDropOtherImages = useCallback((acceptedFiles: File[]) => {
-    console.log("Accepted other image files:", acceptedFiles);
-  }, []);
+  const onDropOtherImages = useCallback(
+    (acceptedFiles: File[]) => {
+      console.log("Accepted other image files:", acceptedFiles);
+
+      if (acceptedFiles.length > 0) {
+        setOtherImages((prevImages) => [
+          ...prevImages,
+          ...acceptedFiles.map((file) => ({
+            id: uuidv4(),
+            file,
+            uploading: false,
+            progress: 0,
+            isDeleting: false,
+            error: false,
+            objectUrl: URL.createObjectURL(file),
+          })),
+        ]);
+      }
+
+      acceptedFiles.forEach((file) => {
+        uploadFile(file, false);
+      });
+    },
+    [uploadFile],
+  );
 
   const onDropRejectedOtherImages = useCallback(
     (fileRejections: FileRejection[]) => {
@@ -320,8 +366,6 @@ function RouteComponent() {
 
   const firstMovie = mockDb[0];
   const image = firstMovie.images[0];
-
-  const isMediaEmpty = media.length === 0;
 
   return (
     <div className="relative w-full">
@@ -416,7 +460,13 @@ function RouteComponent() {
           <div className="mt-3 w-full">
             <div className="flex h-100 w-full gap-1">
               <div className="flex-1">
-                {postersImages.length === 0 ? (
+                {postersImages.length > 0 ? (
+                  <PosterCard
+                    poster={postersImages[0].fileUrl}
+                    className="h-full w-full"
+                    withRibbon
+                  />
+                ) : (
                   <Dialog>
                     <DialogTrigger asChild>
                       <button className="h-full w-full cursor-pointer rounded-md bg-gray-800 transition-all duration-200 hover:bg-white/20">
@@ -487,7 +537,7 @@ function RouteComponent() {
                                   variant="destructive"
                                   size="icon"
                                   className="absolute top-2 right-2"
-                                  onClick={() => removeFile(poster.id)}
+                                  onClick={() => removeFile(poster.id, true)}
                                   disabled={
                                     poster.uploading || poster.isDeleting
                                   }
@@ -523,7 +573,7 @@ function RouteComponent() {
                         </div>
 
                         {/* Second Dropzone - Other Images */}
-                        <div>
+                        <div className="mb-6">
                           <h3 className="mb-4 text-lg font-semibold text-white">
                             Upload Other Images
                           </h3>
@@ -557,36 +607,75 @@ function RouteComponent() {
                             </div>
                           </div>
                         </div>
+
+                        {/* Rendering uploaded other images */}
+                        <div className="grid grid-cols-5 gap-4">
+                          {otherImages.map((image) => (
+                            <div key={image.id} className="flex flex-col gap-1">
+                              <div className="relative aspect-square overflow-hidden rounded-lg">
+                                <img
+                                  src={image.objectUrl}
+                                  alt={`${image.file.name}`}
+                                  className="h-full w-full object-cover"
+                                />
+                                <Button
+                                  variant="destructive"
+                                  size="icon"
+                                  className="absolute top-2 right-2"
+                                  onClick={() => removeFile(image.id, false)}
+                                  disabled={image.uploading || image.isDeleting}
+                                >
+                                  {image.isDeleting ? (
+                                    <Loader className="animate-spin" />
+                                  ) : (
+                                    <Trash2Icon className="size-4" />
+                                  )}
+                                </Button>
+                                {image.uploading && !image.isDeleting && (
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50">
+                                    <p className="font-sans font-medium text-white">
+                                      {image.progress}%
+                                    </p>
+                                    <Loader className="size-4 animate-spin" />
+                                  </div>
+                                )}
+
+                                {image.error && (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-red-500/50">
+                                    <p className="font-medium text-white">
+                                      Error
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                              <p className="text-muted-foreground truncate px-1 text-sm">
+                                {image.file.name}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
                       </DialogHeader>
                     </DialogContent>
                   </Dialog>
-                ) : (
-                  <PosterCard
-                    poster={firstMovie.poster}
-                    className="h-full w-full"
-                    withRibbon
-                  />
                 )}
               </div>
               <div className="flex-3">
-                {isMediaEmpty ? (
-                  <button className="h-full w-full cursor-pointer rounded-md bg-gray-800 transition-all duration-200 hover:bg-white/20">
-                    <div className="flex flex-col items-center justify-center gap-4">
-                      <p className="font-sans text-xl font-semibold text-white">
-                        Add trailer
-                      </p>
-                      <PlusIcon className="size-8 text-white" />
-                    </div>
-                  </button>
-                ) : (
-                  <iframe
+                <button className="h-full w-full cursor-pointer rounded-md bg-gray-800 transition-all duration-200 hover:bg-white/20">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <p className="font-sans text-xl font-semibold text-white">
+                      Add trailer
+                    </p>
+                    <PlusIcon className="size-8 text-white" />
+                  </div>
+                </button>
+
+                {/* <iframe
                     className="h-full w-full rounded-md"
                     src="https://www.youtube.com/embed/5L8intrDcM0?autoplay=1&mute=1&controls=0&loop=1&playlist=5L8intrDcM0"
                     title="YouTube video player"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
-                  ></iframe>
-                )}
+                  ></iframe> */}
               </div>
               <div className="flex flex-1 flex-col gap-1">
                 <Link
@@ -595,7 +684,8 @@ function RouteComponent() {
                 >
                   <ClapperboardIcon className="size-8 text-white" />
                   <p className="font-sans text-sm font-semibold text-white">
-                    <span>{videos.length}</span> VIDEOS
+                    <span>{videos.length}</span>{" "}
+                    {videos.length === 1 ? "VIDEO" : "VIDEOS"}
                   </p>
                 </Link>
                 <Link
@@ -604,7 +694,8 @@ function RouteComponent() {
                 >
                   <ImageIcon className="size-8 text-white" />
                   <p className="font-sans text-sm font-semibold text-white">
-                    <span>{images.length}</span> PHOTOS
+                    <span>{images.length}</span>{" "}
+                    {images.length === 1 ? "IMAGE" : "IMAGES"}
                   </p>
                 </Link>
               </div>

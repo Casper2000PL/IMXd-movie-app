@@ -1,25 +1,65 @@
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
-import { v4 as uuidv4 } from "uuid";
-import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { S3 } from "../../lib/s3client";
+import { db } from "db";
+import { media } from "db/schemas/system-schema";
 
 const uploadRequestSchema = z.object({
   fileName: z.string(),
   contentType: z.string(),
   size: z.number(),
+  mediaCategory: z.enum(["poster", "gallery_image", "trailer", "clip"]),
+  contentTitle: z.string(), // title of the movie or show NOT THE FILENAME
+  contentId: z.string(), // contentId from content table NOT FROM S3 bucket
+  type: z.enum(["video", "image"]),
 });
 
 export const fileRouter = new Hono()
   .post("/", zValidator("json", uploadRequestSchema), async (c) => {
     try {
       const validation = c.req.valid("json");
+      const {
+        fileName,
+        contentType,
+        size,
+        mediaCategory,
+        contentTitle,
+        contentId,
+      } = validation;
 
-      const { fileName, contentType, size } = validation;
+      const uniqueKey = `${contentTitle}-${mediaCategory}-${fileName}`;
 
-      const uniqueKey = `${uuidv4()}-${fileName}`;
+      // Check if file already exists in S3
+      try {
+        const checkCommand = new GetObjectCommand({
+          Bucket: process.env.S3_BUCKET_NAME,
+          Key: uniqueKey,
+        });
+
+        await S3.send(checkCommand);
+
+        // If we reach here, file exists
+        console.log("File with name", fileName, "already exists in S3 bucket");
+        return c.json({ error: "File already exists" }, 409);
+      } catch (error: any) {
+        // If error code is NoSuchKey, file doesn't exist - continue with upload
+        if (error.name !== "NoSuchKey") {
+          // Some other error occurred
+          console.error("Error checking file existence:", error);
+          return c.json(
+            { error: { message: "Failed to check file existence" } },
+            500
+          );
+        }
+        // File doesn't exist, continue with upload process
+      }
 
       const command = new PutObjectCommand({
         Bucket: process.env.S3_BUCKET_NAME,
@@ -32,8 +72,29 @@ export const fileRouter = new Hono()
         expiresIn: 360, // 6 minutes
       });
 
+      const publicUrl = `https://${process.env.S3_BUCKET_NAME}.t3.storage.dev/${uniqueKey}`;
+
+      // Insert media record into database
+      try {
+        await db.insert(media).values({
+          contentId,
+          fileUrl: publicUrl,
+          type: "image",
+          mediaCategory: "poster",
+          title: fileName,
+          fileSize: size,
+        });
+      } catch (error) {
+        console.error("Error inserting media record into database:", error);
+        return c.json(
+          { error: `Failed to insert media record: ${error}` },
+          500
+        );
+      }
+
       const response = {
         presignedUrl,
+        publicUrl,
         key: uniqueKey,
       };
 
@@ -43,10 +104,34 @@ export const fileRouter = new Hono()
       return c.json({ error: "Failed to generate presigned URL" }, 500);
     }
   })
+
+  // Get permanent URL for uploaded file
+  .get("/:key", async (c) => {
+    try {
+      const key = c.req.param("key");
+      if (!key) {
+        return c.json({ error: "File key is required" }, { status: 400 });
+      }
+
+      // Tigris public URL
+      const publicUrl = `https://${process.env.S3_BUCKET_NAME}.t3.storage.dev/${key}`;
+
+      return c.json(
+        {
+          url: publicUrl,
+          key,
+        },
+        { status: 200 }
+      );
+    } catch (error) {
+      console.error("Error generating URL:", error);
+      return c.json({ error: "Failed to generate URL" }, { status: 500 });
+    }
+  })
+
   .delete("/:key", async (c) => {
     try {
       const key = c.req.param("key");
-
       if (!key) {
         return c.json({ error: "File key is required" }, { status: 400 });
       }
@@ -57,7 +142,6 @@ export const fileRouter = new Hono()
       });
 
       await S3.send(command);
-
       return c.json({ message: "File deleted successfully" }, { status: 200 });
     } catch (error) {
       console.error("Error deleting file:", error);
