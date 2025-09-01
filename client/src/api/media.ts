@@ -5,7 +5,7 @@ export interface Media {
   contentId?: string;
   fileUrl: string;
   type: "image" | "video";
-  mediaCategory: "poster" | "trailer" | "clip";
+  mediaCategory: "poster" | "gallery_image" | "trailer" | "clip";
   title?: string;
   fileSize?: number;
   createdAt: string;

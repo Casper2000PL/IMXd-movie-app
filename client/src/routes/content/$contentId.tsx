@@ -4,6 +4,13 @@ import { getMediaByContentId } from "@/api/media";
 import PosterCard from "@/components/poster-card";
 import { Button } from "@/components/ui/button";
 import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNextCustom,
+  CarouselPreviousCustom,
+} from "@/components/ui/carousel";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -11,9 +18,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { mockDb } from "@/lib/images-data";
 import { cn } from "@/lib/utils";
 import { extractYearFromDate, formatRuntime } from "@/utils/dateUtils";
+import { DialogClose } from "@radix-ui/react-dialog";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
@@ -28,6 +35,7 @@ import {
   Trash2Icon,
   TrendingUpIcon,
   TriangleIcon,
+  XIcon,
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
@@ -35,7 +43,7 @@ import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
 // ✅ Dynamic route definition with $contentId parameter
-export const Route = createFileRoute("/contentId/$contentId")({
+export const Route = createFileRoute("/content/$contentId")({
   loader: async ({ params }) => {
     const [contentData, mediaData] = await Promise.all([
       getContentById(params.contentId),
@@ -360,21 +368,25 @@ function ContentDetailComponent() {
   const videos = media.filter((m) => m.type === "video");
   const postersImages = media.filter((m) => m.mediaCategory === "poster");
   const images = media.filter((m) => m.type === "image");
+  const galleryImages = media.filter(
+    (m) => m.mediaCategory === "gallery_image",
+  );
 
   console.log("Videos: ", videos);
   console.log("Posters: ", postersImages);
-
-  const firstMovie = mockDb[0];
-  const image = firstMovie.images[0];
+  console.log("Images: ", images);
+  console.log("Gallery Images: ", galleryImages);
 
   return (
     <div className="relative w-full">
       <div className="relative min-h-screen w-full">
         {/* Background Image Layer */}
+
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
-            backgroundImage: `url("${image}")`,
+            backgroundImage:
+              galleryImages[0] && `url("${galleryImages[0].fileUrl}")`,
           }}
         />
 
@@ -678,6 +690,7 @@ function ContentDetailComponent() {
                   ></iframe> */}
               </div>
               <div className="flex flex-1 flex-col gap-1">
+                {/* videos button */}
                 <Link
                   to="/"
                   className="flex flex-1 flex-col items-center justify-center gap-4 rounded-md bg-white/10 transition-all duration-200 hover:bg-white/25"
@@ -688,16 +701,65 @@ function ContentDetailComponent() {
                     {videos.length === 1 ? "VIDEO" : "VIDEOS"}
                   </p>
                 </Link>
-                <Link
-                  to="/"
-                  className="flex flex-1 flex-col items-center justify-center gap-4 rounded-md bg-white/10 transition-all duration-200 hover:bg-white/25"
-                >
-                  <ImageIcon className="size-8 text-white" />
-                  <p className="font-sans text-sm font-semibold text-white">
-                    <span>{images.length}</span>{" "}
-                    {images.length === 1 ? "IMAGE" : "IMAGES"}
-                  </p>
-                </Link>
+                {/* images button */}
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-4 rounded-md bg-white/10 transition-all duration-200 hover:bg-white/25">
+                      <ImageIcon className="size-8 text-white" />
+                      <p className="font-sans text-sm font-semibold text-white">
+                        <span>{images.length}</span>{" "}
+                        {images.length === 1 ? "IMAGE" : "IMAGES"}
+                      </p>
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent
+                    className="flex h-full max-h-screen !w-full !max-w-full flex-col items-center rounded-none border-2 border-none bg-black px-2 pt-4 pb-0 text-white outline-none md:px-4 xl:px-10"
+                    showCloseButton={false}
+                  >
+                    <div className="h-full w-full">
+                      <Carousel
+                        className="m-0 h-full w-full p-0"
+                        opts={{
+                          loop: true,
+                          watchDrag: false,
+                          duration: 0,
+                        }}
+                      >
+                        <CarouselContent className="m-0 flex h-full w-full p-0">
+                          {images.map((image, index) => (
+                            <CarouselItem key={index} className="w-full p-0">
+                              <div className="flex h-full w-full flex-col gap-5">
+                                <div className="flex w-full items-center justify-between px-2">
+                                  <DialogClose className="flex w-fit cursor-pointer items-center justify-center gap-1 rounded-full px-3 py-1.5 transition-all duration-200 hover:bg-white/20 active:bg-white/30">
+                                    <XIcon
+                                      className="size-5"
+                                      strokeWidth={2.5}
+                                    />
+                                    <span className="font-roboto text-sm font-semibold">
+                                      Close
+                                    </span>
+                                  </DialogClose>
+                                  <p className="text-custom-yellow-100 font-roboto text-base">
+                                    {index + 1} of {images.length}
+                                  </p>
+                                </div>
+                                <div className="flex h-full w-full justify-center">
+                                  <img
+                                    src={image.fileUrl}
+                                    alt={image.title}
+                                    className="h-full object-cover"
+                                  />
+                                </div>
+                              </div>
+                            </CarouselItem>
+                          ))}
+                        </CarouselContent>
+                        <CarouselNextCustom />
+                        <CarouselPreviousCustom />
+                      </Carousel>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
           </div>

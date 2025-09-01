@@ -80,7 +80,7 @@ export const fileRouter = new Hono()
           contentId,
           fileUrl: publicUrl,
           type: "image",
-          mediaCategory: "poster",
+          mediaCategory,
           title: fileName,
           fileSize: size,
         });

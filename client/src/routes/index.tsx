@@ -47,7 +47,7 @@ function RouteComponent() {
           {posters.length > 0 &&
             posters.map((poster) => (
               <Link
-                to="/contentId/$contentId"
+                to="/content/$contentId"
                 params={{ contentId: poster.contentId! }}
                 key={poster.id}
               >
