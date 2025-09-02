@@ -1,3 +1,4 @@
+import { createContent } from "@/api/content";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -19,13 +20,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
-import z from "zod";
-import { type FileRejection, useDropzone } from "react-dropzone";
-import { FileIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useCallback } from "react";
 import { toast } from "sonner";
-import { createContent } from "@/api/content";
+import z from "zod";
 
 const formSchema = z.object({
   title: z.string().min(1, {
@@ -61,42 +57,6 @@ export const Route = createFileRoute("/add-content")({
 
 function RouteComponent() {
   const navigate = useNavigate();
-
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    console.log("Accepted files:", acceptedFiles);
-  }, []);
-
-  const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
-    if (fileRejections.length > 0) {
-      const tooManyFiles = fileRejections.find(
-        (fileRejection) => fileRejection.errors[0].code === "too-many-files",
-      );
-
-      const fileTooLarge = fileRejections.find(
-        (fileRejection) => fileRejection.errors[0].code === "file-too-large",
-      );
-
-      if (tooManyFiles) {
-        toast.error("You can upload up to 5 files at a time.");
-      }
-
-      if (fileTooLarge) {
-        toast.error("Each file must be less than 5MB.");
-      }
-    }
-
-    console.log("Rejected files:", fileRejections);
-  }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    onDropRejected,
-    maxFiles: 5,
-    maxSize: 5 * 1024 * 1024, // 5MB
-    accept: {
-      "image/*": [],
-    },
-  });
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -169,33 +129,6 @@ function RouteComponent() {
                 </FormItem>
               )}
             />
-
-            {/* Dropzone */}
-            <div
-              className={cn(
-                isDragActive
-                  ? "bg-custom-yellow-100/30 border-solid"
-                  : "border-dashed",
-                "group border-custom-yellow-300 hover:bg-custom-yellow-100/10 w-full cursor-pointer rounded-xl border-2 py-10 transition duration-200",
-              )}
-              {...getRootProps()}
-            >
-              <input {...getInputProps()} />
-              <div className="flex w-full flex-col items-center justify-center">
-                <FileIcon
-                  className={cn(
-                    isDragActive ? "text-gray-400" : "text-custom-yellow-100",
-                    "size-8 duration-100 group-hover:text-gray-400",
-                  )}
-                />
-                <div className="mt-3 text-center">
-                  <p className="mb-0.5 text-sm font-medium text-gray-900">
-                    Click to upload poster images
-                  </p>
-                  <p className="text-xs text-gray-500">PNG, JPG up to 5MB</p>
-                </div>
-              </div>
-            </div>
 
             {/* Content Type */}
             <FormField

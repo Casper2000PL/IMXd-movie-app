@@ -1,7 +1,9 @@
+import { zValidator } from "@hono/zod-validator";
 import { db } from "db";
 import { media } from "db/schemas/system-schema";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
+import { createMediaSchema } from "../../../shared/src/schemas/media";
 
 export const mediaRouter = new Hono()
   .get("/", async (c) => {
@@ -23,6 +25,28 @@ export const mediaRouter = new Hono()
       return c.json(
         {
           error: "Failed to fetch media",
+          details: error,
+        },
+        500
+      );
+    }
+  })
+  .post("/", zValidator("form", createMediaSchema), async (c) => {
+    try {
+      const validatedData = c.req.valid("form");
+      console.log("Backend - Validated data:", validatedData);
+
+      const createdMedia = await db
+        .insert(media)
+        .values(validatedData)
+        .returning();
+
+      return c.json(createdMedia, 201);
+    } catch (error) {
+      console.error("Error creating media:", error);
+      return c.json(
+        {
+          error: "Failed to create media",
           details: error,
         },
         500

@@ -56,7 +56,7 @@ export const contentRouter = new Hono()
         .returning();
 
       console.log("Backend - Content created:", contentData);
-      return c.json(contentData[0]);
+      return c.json(contentData[0], 201);
     } catch (error) {
       console.error("Error creating content:", error);
       return c.json(

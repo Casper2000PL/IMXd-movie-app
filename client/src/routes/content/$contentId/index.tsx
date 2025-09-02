@@ -1,6 +1,6 @@
 import { getContentById } from "@/api/content";
 import { s3FileDelete, s3FileUpload } from "@/api/file";
-import { getMediaByContentId } from "@/api/media";
+import { createMedia, getMediaByContentId } from "@/api/media";
 import PosterCard from "@/components/poster-card";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,9 +17,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { convertToEmbedUrl } from "@/utils/convertToEmbedUrl";
 import { extractYearFromDate, formatRuntime } from "@/utils/dateUtils";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogClose } from "@radix-ui/react-dialog";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -31,6 +42,7 @@ import {
   ImagesIcon,
   Loader,
   PlusIcon,
+  SettingsIcon,
   StarIcon,
   Trash2Icon,
   TrendingUpIcon,
@@ -39,11 +51,12 @@ import {
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
+import z from "zod";
 
-// ✅ Dynamic route definition with $contentId parameter
-export const Route = createFileRoute("/content/$contentId")({
+export const Route = createFileRoute("/content/$contentId/")({
   loader: async ({ params }) => {
     const [contentData, mediaData] = await Promise.all([
       getContentById(params.contentId),
@@ -55,12 +68,42 @@ export const Route = createFileRoute("/content/$contentId")({
       media: mediaData,
     };
   },
-  component: ContentDetailComponent,
+
+  component: ContentDetailsComponent,
 });
 
-function ContentDetailComponent() {
+const formSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  youtubeUrl: z.url("Invalid URL").min(1, "YouTube URL is required"),
+});
+
+type FormData = z.infer<typeof formSchema>;
+
+function ContentDetailsComponent() {
   const { content, media } = Route.useLoaderData();
   const { contentId } = Route.useParams();
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: "",
+      youtubeUrl: "",
+    },
+  });
+
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    console.log(values);
+    createMedia({
+      contentId,
+      formData: {
+        title: values.title,
+        fileUrl: values.youtubeUrl,
+        fileSize: 0,
+      },
+      type: "video",
+      mediaCategory: "trailer",
+    });
+  };
 
   const [posters, setPosters] = useState<
     Array<{
@@ -357,25 +400,13 @@ function ContentDetailComponent() {
     },
   });
 
-  console.log("Dropzone props:", { getRootProps, getInputProps, isDragActive });
-
-  console.log("contentId: ", contentId);
-
-  console.log("Content: ", content);
-
-  console.log("Media: ", media);
-
   const videos = media.filter((m) => m.type === "video");
   const postersImages = media.filter((m) => m.mediaCategory === "poster");
   const images = media.filter((m) => m.type === "image");
   const galleryImages = media.filter(
     (m) => m.mediaCategory === "gallery_image",
   );
-
-  console.log("Videos: ", videos);
-  console.log("Posters: ", postersImages);
-  console.log("Images: ", images);
-  console.log("Gallery Images: ", galleryImages);
+  const trailers = media.filter((m) => m.mediaCategory === "trailer");
 
   return (
     <div className="relative w-full">
@@ -672,22 +703,80 @@ function ContentDetailComponent() {
                 )}
               </div>
               <div className="flex-3">
-                <button className="h-full w-full cursor-pointer rounded-md bg-gray-800 transition-all duration-200 hover:bg-white/20">
-                  <div className="flex flex-col items-center justify-center gap-4">
-                    <p className="font-sans text-xl font-semibold text-white">
-                      Add trailer
-                    </p>
-                    <PlusIcon className="size-8 text-white" />
-                  </div>
-                </button>
-
-                {/* <iframe
+                {trailers.length > 0 ? (
+                  <iframe
                     className="h-full w-full rounded-md"
-                    src="https://www.youtube.com/embed/5L8intrDcM0?autoplay=1&mute=1&controls=0&loop=1&playlist=5L8intrDcM0"
+                    src={convertToEmbedUrl(trailers[0].fileUrl)!}
                     title="YouTube video player"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
-                  ></iframe> */}
+                  ></iframe>
+                ) : (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button className="h-full w-full cursor-pointer rounded-md bg-gray-800 transition-all duration-200 hover:bg-white/20">
+                        <div className="flex flex-col items-center justify-center gap-4">
+                          <p className="font-sans text-xl font-semibold text-white">
+                            Add trailer
+                          </p>
+                          <PlusIcon className="size-8 text-white" />
+                        </div>
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="flex h-full max-h-screen !w-full !max-w-full flex-col items-center rounded-none border-2 border-none bg-gray-800 px-2 pt-4 pb-0 text-white outline-none md:px-4 xl:px-10">
+                      <DialogHeader>
+                        <DialogTitle className="text-center">
+                          Add Youtube Trailer
+                        </DialogTitle>
+                      </DialogHeader>
+                      <Form {...form}>
+                        <form
+                          onSubmit={form.handleSubmit(onSubmit)}
+                          className="mt-10 w-full max-w-xl space-y-6"
+                        >
+                          <FormField
+                            control={form.control}
+                            name="title"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Title</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Enter video title"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="youtubeUrl"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>YouTube URL</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Enter YouTube URL"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <Button
+                            type="submit"
+                            className="bg-custom-yellow-300 hover:bg-custom-yellow-100/70 w-full font-semibold text-black"
+                          >
+                            Add Trailer
+                          </Button>
+                        </form>
+                      </Form>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </div>
               <div className="flex flex-1 flex-col gap-1">
                 {/* videos button */}
@@ -865,6 +954,20 @@ function ContentDetailComponent() {
         </div>
       </div>
       {/* Second Section */}
+      <div className="bg-custom-yellow-100 flex w-full justify-center">
+        <div className="flex max-w-7xl items-center py-2">
+          <Link
+            to="/content/$contentId/settings"
+            params={{ contentId }}
+            className="flex items-center gap-3 rounded-full px-5 py-2 transition-all duration-200 hover:bg-white/25 active:bg-white/40"
+          >
+            <p className="font-roboto text-xl font-medium">
+              Open settings to edit
+            </p>
+            <SettingsIcon className="size-6 text-black" strokeWidth={2} />
+          </Link>
+        </div>
+      </div>
       <div className="h-[300px] w-full bg-blue-400"></div>
     </div>
   );

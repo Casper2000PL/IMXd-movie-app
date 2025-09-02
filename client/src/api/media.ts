@@ -7,10 +7,51 @@ export interface Media {
   type: "image" | "video";
   mediaCategory: "poster" | "gallery_image" | "trailer" | "clip";
   title?: string;
-  fileSize?: number;
+  fileSize: number;
   createdAt: string;
   updatedAt: string;
 }
+
+interface createMediaProps {
+  formData: {
+    title: string;
+    fileUrl: string;
+    fileSize: number;
+  };
+  contentId: string;
+  type: "image" | "video";
+  mediaCategory: "poster" | "gallery_image" | "trailer" | "clip";
+}
+
+export const createMedia = async ({
+  contentId,
+  formData,
+  type,
+  mediaCategory,
+}: createMediaProps) => {
+  try {
+    const response = await client.api.media.$post({
+      form: {
+        contentId,
+        fileUrl: formData.fileUrl,
+        type,
+        mediaCategory,
+        title: formData.title,
+        fileSize: formData.fileSize.toString(),
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data;
+    } else {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Error creating media:", error);
+    throw error;
+  }
+};
 
 export const getMedia = async (): Promise<Media[]> => {
   try {

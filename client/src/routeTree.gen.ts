@@ -16,7 +16,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as RegisterIndexRouteImport } from './routes/register/index'
 import { Route as RegisterSignUpRouteImport } from './routes/register/sign-up'
 import { Route as RegisterSignInRouteImport } from './routes/register/sign-in'
-import { Route as ContentContentIdRouteImport } from './routes/content/$contentId'
+import { Route as ContentContentIdIndexRouteImport } from './routes/content/$contentId/index'
+import { Route as ContentContentIdSettingsRouteImport } from './routes/content/$contentId/settings'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -53,30 +54,38 @@ const RegisterSignInRoute = RegisterSignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => RegisterRoute,
 } as any)
-const ContentContentIdRoute = ContentContentIdRouteImport.update({
-  id: '/content/$contentId',
-  path: '/content/$contentId',
+const ContentContentIdIndexRoute = ContentContentIdIndexRouteImport.update({
+  id: '/content/$contentId/',
+  path: '/content/$contentId/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContentContentIdSettingsRoute =
+  ContentContentIdSettingsRouteImport.update({
+    id: '/content/$contentId/settings',
+    path: '/content/$contentId/settings',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/add-content': typeof AddContentRoute
   '/register': typeof RegisterRouteWithChildren
-  '/content/$contentId': typeof ContentContentIdRoute
   '/register/sign-in': typeof RegisterSignInRoute
   '/register/sign-up': typeof RegisterSignUpRoute
   '/register/': typeof RegisterIndexRoute
+  '/content/$contentId/settings': typeof ContentContentIdSettingsRoute
+  '/content/$contentId': typeof ContentContentIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/add-content': typeof AddContentRoute
-  '/content/$contentId': typeof ContentContentIdRoute
   '/register/sign-in': typeof RegisterSignInRoute
   '/register/sign-up': typeof RegisterSignUpRoute
   '/register': typeof RegisterIndexRoute
+  '/content/$contentId/settings': typeof ContentContentIdSettingsRoute
+  '/content/$contentId': typeof ContentContentIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -84,10 +93,11 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/add-content': typeof AddContentRoute
   '/register': typeof RegisterRouteWithChildren
-  '/content/$contentId': typeof ContentContentIdRoute
   '/register/sign-in': typeof RegisterSignInRoute
   '/register/sign-up': typeof RegisterSignUpRoute
   '/register/': typeof RegisterIndexRoute
+  '/content/$contentId/settings': typeof ContentContentIdSettingsRoute
+  '/content/$contentId/': typeof ContentContentIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -96,29 +106,32 @@ export interface FileRouteTypes {
     | '/about'
     | '/add-content'
     | '/register'
-    | '/content/$contentId'
     | '/register/sign-in'
     | '/register/sign-up'
     | '/register/'
+    | '/content/$contentId/settings'
+    | '/content/$contentId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/add-content'
-    | '/content/$contentId'
     | '/register/sign-in'
     | '/register/sign-up'
     | '/register'
+    | '/content/$contentId/settings'
+    | '/content/$contentId'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/add-content'
     | '/register'
-    | '/content/$contentId'
     | '/register/sign-in'
     | '/register/sign-up'
     | '/register/'
+    | '/content/$contentId/settings'
+    | '/content/$contentId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -126,7 +139,8 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AddContentRoute: typeof AddContentRoute
   RegisterRoute: typeof RegisterRouteWithChildren
-  ContentContentIdRoute: typeof ContentContentIdRoute
+  ContentContentIdSettingsRoute: typeof ContentContentIdSettingsRoute
+  ContentContentIdIndexRoute: typeof ContentContentIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -180,11 +194,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterSignInRouteImport
       parentRoute: typeof RegisterRoute
     }
-    '/content/$contentId': {
-      id: '/content/$contentId'
+    '/content/$contentId/': {
+      id: '/content/$contentId/'
       path: '/content/$contentId'
       fullPath: '/content/$contentId'
-      preLoaderRoute: typeof ContentContentIdRouteImport
+      preLoaderRoute: typeof ContentContentIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/content/$contentId/settings': {
+      id: '/content/$contentId/settings'
+      path: '/content/$contentId/settings'
+      fullPath: '/content/$contentId/settings'
+      preLoaderRoute: typeof ContentContentIdSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -211,7 +232,8 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AddContentRoute: AddContentRoute,
   RegisterRoute: RegisterRouteWithChildren,
-  ContentContentIdRoute: ContentContentIdRoute,
+  ContentContentIdSettingsRoute: ContentContentIdSettingsRoute,
+  ContentContentIdIndexRoute: ContentContentIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
