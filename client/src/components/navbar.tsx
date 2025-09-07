@@ -8,11 +8,16 @@ import NavButton from "./nav-button";
 import { ChevronDownIcon, CircleUserRoundIcon } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { authClient } from "@/lib/auth-client";
+import { User } from "../../../server/lib/auth";
 
 const Navbar = () => {
   const { data: session } = authClient.useSession();
   const isLoggedIn = !!session;
-  console.log("isLoggedIn: ", isLoggedIn);
+
+  // console.log("isLoggedIn: ", isLoggedIn);
+
+  const user = session?.user as User;
+  console.log("User info from Navbar: ", user.role);
 
   return (
     <div className="flex h-14 w-full items-center justify-between bg-gray-900 px-4">
@@ -31,7 +36,7 @@ const Navbar = () => {
           </div>
         </Link>
 
-        {isLoggedIn && (
+        {user.role === "ADMIN" && (
           <NavButton>
             <Link to="/add-content">Add Content</Link>
           </NavButton>

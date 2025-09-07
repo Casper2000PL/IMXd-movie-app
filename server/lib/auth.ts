@@ -5,11 +5,22 @@ import { db } from "../db/index";
 import * as authSchema from "../db/schemas/auth-schema";
 
 export const auth: ReturnType<typeof betterAuth> = betterAuth({
+  database: drizzleAdapter(db, {
+    provider: "pg",
+    schema: authSchema,
+  }),
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:5173",
-  secret: process.env.BETTER_AUTH_SECRET || undefined,
+  secret: process.env.BETTER_AUTH_SECRET,
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        input: false,
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
-    autoSignIn: true,
     minPasswordLength: 8,
   },
   socialProviders: {
@@ -23,13 +34,21 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
     "http://localhost:3000", // Your frontend URL
     "http://localhost:5173", // Vite default port
   ],
-  database: drizzleAdapter(db, {
-    provider: "pg",
-    schema: authSchema,
-  }),
 });
 
+export type Session = typeof auth.$Infer.Session;
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  emailVerified: boolean;
+  image: string | null;
+  role?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export type AuthType = {
-  user: typeof auth.$Infer.Session.user | null;
-  session: typeof auth.$Infer.Session.session | null;
+  user: User | null;
+  session: Session | null;
 };

@@ -1,6 +1,6 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
-import { auth, type AuthType } from "../lib/auth";
+import { auth, type AuthType, type User } from "../lib/auth";
 import { authMiddleware } from "./middleware";
 import { db } from "db";
 import { content } from "../db/schemas/system-schema";
@@ -25,8 +25,8 @@ app.use("*", async (c, next) => {
     c.set("session", null);
     return next();
   }
-  c.set("user", session.user);
-  c.set("session", session.session);
+  c.set("user", session.user as User);
+  c.set("session", session);
   return next();
 });
 
