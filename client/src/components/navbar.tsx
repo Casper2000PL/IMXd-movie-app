@@ -9,15 +9,15 @@ import { ChevronDownIcon, CircleUserRoundIcon } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { authClient } from "@/lib/auth-client";
 import { User } from "../../../server/lib/auth";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 const Navbar = () => {
   const { data: session } = authClient.useSession();
   const isLoggedIn = !!session;
-
-  // console.log("isLoggedIn: ", isLoggedIn);
+  const [open, setOpen] = useState(false);
 
   const user = session?.user as User;
-  console.log("User info from Navbar: ", user.role);
 
   return (
     <div className="flex h-14 w-full items-center justify-between bg-gray-900 px-4">
@@ -36,19 +36,32 @@ const Navbar = () => {
           </div>
         </Link>
 
-        {user.role === "ADMIN" && (
+        {isLoggedIn && user.role === "ADMIN" && (
           <NavButton>
             <Link to="/add-content">Add Content</Link>
           </NavButton>
         )}
 
         {isLoggedIn ? (
-          <DropdownMenu>
+          <DropdownMenu open={open} onOpenChange={setOpen}>
             <DropdownMenuTrigger asChild>
               <NavButton>
-                <CircleUserRoundIcon className="size-6" />
-                {session.user.name}
-                <ChevronDownIcon className="size-4" />
+                {user.image ? (
+                  <img
+                    src={user.image}
+                    alt={user.name}
+                    className="size-6 rounded-full object-cover"
+                  />
+                ) : (
+                  <CircleUserRoundIcon className="size-6" />
+                )}
+                {user.name}
+                <ChevronDownIcon
+                  className={cn(
+                    "size-4 transition-all duration-200",
+                    open && "rotate-180",
+                  )}
+                />
               </NavButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -56,7 +69,9 @@ const Navbar = () => {
               align="end"
             >
               <DropdownMenuItem className="rounded-x py-3 pl-4 text-base hover:bg-white/10! hover:text-white!">
-                Your Profile
+                <Link to="/profile/$profileId" params={{ profileId: user.id }}>
+                  Your Profile
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem className="py-2.5 pl-4 text-base hover:bg-white/15! hover:text-white!">
                 Your Watchlist
@@ -71,7 +86,12 @@ const Navbar = () => {
                 Your Watch History
               </DropdownMenuItem>
               <DropdownMenuItem className="py-2.5 pl-4 text-base hover:bg-white/15! hover:text-white!">
-                Account Settings
+                <Link
+                  to="/profile/$profileId/settings"
+                  params={{ profileId: user.id }}
+                >
+                  Account Settings
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="py-2.5 pl-4 text-base hover:bg-white/15! hover:text-white!"

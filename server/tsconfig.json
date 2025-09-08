@@ -24,7 +24,8 @@
     // Override root settings for server
     "baseUrl": "./",
     "paths": {
-      // "@shared/*": ["../shared/src/*"]
+      "@shared/*": ["../shared/src/*"],
+      "@client/*": ["../client/src/*"]
     }
   },
   "include": ["src/**/*"],

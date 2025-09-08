@@ -16,7 +16,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as RegisterIndexRouteImport } from './routes/register/index'
 import { Route as RegisterSignUpRouteImport } from './routes/register/sign-up'
 import { Route as RegisterSignInRouteImport } from './routes/register/sign-in'
+import { Route as ProfileProfileIdIndexRouteImport } from './routes/profile/$profileId/index'
 import { Route as ContentContentIdIndexRouteImport } from './routes/content/$contentId/index'
+import { Route as ProfileProfileIdSettingsRouteImport } from './routes/profile/$profileId/settings'
+import { Route as ProfileProfileIdEditProfileRouteImport } from './routes/profile/$profileId/edit-profile'
 import { Route as ContentContentIdSettingsRouteImport } from './routes/content/$contentId/settings'
 
 const RegisterRoute = RegisterRouteImport.update({
@@ -54,11 +57,28 @@ const RegisterSignInRoute = RegisterSignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => RegisterRoute,
 } as any)
+const ProfileProfileIdIndexRoute = ProfileProfileIdIndexRouteImport.update({
+  id: '/profile/$profileId/',
+  path: '/profile/$profileId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ContentContentIdIndexRoute = ContentContentIdIndexRouteImport.update({
   id: '/content/$contentId/',
   path: '/content/$contentId/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileProfileIdSettingsRoute =
+  ProfileProfileIdSettingsRouteImport.update({
+    id: '/profile/$profileId/settings',
+    path: '/profile/$profileId/settings',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ProfileProfileIdEditProfileRoute =
+  ProfileProfileIdEditProfileRouteImport.update({
+    id: '/profile/$profileId/edit-profile',
+    path: '/profile/$profileId/edit-profile',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ContentContentIdSettingsRoute =
   ContentContentIdSettingsRouteImport.update({
     id: '/content/$contentId/settings',
@@ -75,7 +95,10 @@ export interface FileRoutesByFullPath {
   '/register/sign-up': typeof RegisterSignUpRoute
   '/register/': typeof RegisterIndexRoute
   '/content/$contentId/settings': typeof ContentContentIdSettingsRoute
+  '/profile/$profileId/edit-profile': typeof ProfileProfileIdEditProfileRoute
+  '/profile/$profileId/settings': typeof ProfileProfileIdSettingsRoute
   '/content/$contentId': typeof ContentContentIdIndexRoute
+  '/profile/$profileId': typeof ProfileProfileIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -85,7 +108,10 @@ export interface FileRoutesByTo {
   '/register/sign-up': typeof RegisterSignUpRoute
   '/register': typeof RegisterIndexRoute
   '/content/$contentId/settings': typeof ContentContentIdSettingsRoute
+  '/profile/$profileId/edit-profile': typeof ProfileProfileIdEditProfileRoute
+  '/profile/$profileId/settings': typeof ProfileProfileIdSettingsRoute
   '/content/$contentId': typeof ContentContentIdIndexRoute
+  '/profile/$profileId': typeof ProfileProfileIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -97,7 +123,10 @@ export interface FileRoutesById {
   '/register/sign-up': typeof RegisterSignUpRoute
   '/register/': typeof RegisterIndexRoute
   '/content/$contentId/settings': typeof ContentContentIdSettingsRoute
+  '/profile/$profileId/edit-profile': typeof ProfileProfileIdEditProfileRoute
+  '/profile/$profileId/settings': typeof ProfileProfileIdSettingsRoute
   '/content/$contentId/': typeof ContentContentIdIndexRoute
+  '/profile/$profileId/': typeof ProfileProfileIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -110,7 +139,10 @@ export interface FileRouteTypes {
     | '/register/sign-up'
     | '/register/'
     | '/content/$contentId/settings'
+    | '/profile/$profileId/edit-profile'
+    | '/profile/$profileId/settings'
     | '/content/$contentId'
+    | '/profile/$profileId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -120,7 +152,10 @@ export interface FileRouteTypes {
     | '/register/sign-up'
     | '/register'
     | '/content/$contentId/settings'
+    | '/profile/$profileId/edit-profile'
+    | '/profile/$profileId/settings'
     | '/content/$contentId'
+    | '/profile/$profileId'
   id:
     | '__root__'
     | '/'
@@ -131,7 +166,10 @@ export interface FileRouteTypes {
     | '/register/sign-up'
     | '/register/'
     | '/content/$contentId/settings'
+    | '/profile/$profileId/edit-profile'
+    | '/profile/$profileId/settings'
     | '/content/$contentId/'
+    | '/profile/$profileId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -140,7 +178,10 @@ export interface RootRouteChildren {
   AddContentRoute: typeof AddContentRoute
   RegisterRoute: typeof RegisterRouteWithChildren
   ContentContentIdSettingsRoute: typeof ContentContentIdSettingsRoute
+  ProfileProfileIdEditProfileRoute: typeof ProfileProfileIdEditProfileRoute
+  ProfileProfileIdSettingsRoute: typeof ProfileProfileIdSettingsRoute
   ContentContentIdIndexRoute: typeof ContentContentIdIndexRoute
+  ProfileProfileIdIndexRoute: typeof ProfileProfileIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -194,11 +235,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterSignInRouteImport
       parentRoute: typeof RegisterRoute
     }
+    '/profile/$profileId/': {
+      id: '/profile/$profileId/'
+      path: '/profile/$profileId'
+      fullPath: '/profile/$profileId'
+      preLoaderRoute: typeof ProfileProfileIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/content/$contentId/': {
       id: '/content/$contentId/'
       path: '/content/$contentId'
       fullPath: '/content/$contentId'
       preLoaderRoute: typeof ContentContentIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/$profileId/settings': {
+      id: '/profile/$profileId/settings'
+      path: '/profile/$profileId/settings'
+      fullPath: '/profile/$profileId/settings'
+      preLoaderRoute: typeof ProfileProfileIdSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/$profileId/edit-profile': {
+      id: '/profile/$profileId/edit-profile'
+      path: '/profile/$profileId/edit-profile'
+      fullPath: '/profile/$profileId/edit-profile'
+      preLoaderRoute: typeof ProfileProfileIdEditProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/content/$contentId/settings': {
@@ -233,7 +295,10 @@ const rootRouteChildren: RootRouteChildren = {
   AddContentRoute: AddContentRoute,
   RegisterRoute: RegisterRouteWithChildren,
   ContentContentIdSettingsRoute: ContentContentIdSettingsRoute,
+  ProfileProfileIdEditProfileRoute: ProfileProfileIdEditProfileRoute,
+  ProfileProfileIdSettingsRoute: ProfileProfileIdSettingsRoute,
   ContentContentIdIndexRoute: ContentContentIdIndexRoute,
+  ProfileProfileIdIndexRoute: ProfileProfileIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -3,13 +3,15 @@ import { Button } from "./ui/button";
 
 interface NavButtonProps {
   children?: React.ReactNode;
+  onClick?: () => void;
 }
 
 const NavButton = forwardRef<HTMLButtonElement, NavButtonProps>(
-  ({ children, ...props }, ref) => {
+  ({ children, onClick, ...props }, ref) => {
     return (
       <Button
         ref={ref}
+        onClick={onClick}
         className="rounded-3xl bg-transparent p-4 font-bold hover:bg-white/10 hover:transition-all focus:bg-white/10 active:bg-white/20"
         {...props}
       >

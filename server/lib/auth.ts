@@ -15,6 +15,7 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
     additionalFields: {
       role: {
         type: "string",
+        required: true,
         input: false,
       },
     },
