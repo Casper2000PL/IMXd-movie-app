@@ -1,6 +1,7 @@
 import Navbar from "@/components/navbar";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Toaster } from "sonner";
 
 export const Route = createRootRoute({
@@ -28,6 +29,7 @@ function RootComponent() {
       {/* Tanstack router stuff */}
       {/* Devtools for debugging the router */}
       <TanStackRouterDevtools position="bottom-left" />
+      <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-right" />
     </>
   );
 }

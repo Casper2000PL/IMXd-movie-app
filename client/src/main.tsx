@@ -1,10 +1,13 @@
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
-import "./index.css"; // Ensure you have your global styles imported
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import "./index.css";
 
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
+
+const queryClient = new QueryClient();
 
 // Create a new router instance
 const router = createRouter({ routeTree });
@@ -19,11 +22,19 @@ declare module "@tanstack/react-router" {
 // Render the app
 const rootElement = document.getElementById("root")!;
 
+if (!rootElement) {
+  throw new Error(
+    "Root element not found. Check if it's in your index.html or if the id is correct.",
+  );
+}
+
 if (!rootElement.innerHTML) {
   const root = ReactDOM.createRoot(rootElement);
   root.render(
     <StrictMode>
-      <RouterProvider router={router} />
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
     </StrictMode>,
   );
 }
