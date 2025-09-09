@@ -49,7 +49,7 @@ const Navbar = () => {
                 {user.image ? (
                   <img
                     src={user.image}
-                    alt={user.name}
+                    alt={user.name.charAt(0)}
                     className="size-6 rounded-full object-cover"
                   />
                 ) : (

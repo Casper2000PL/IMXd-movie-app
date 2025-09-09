@@ -1,5 +1,6 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import { cors } from "hono/cors"; // Add this import
 import { auth, type AuthType, type User } from "../lib/auth";
 import { authMiddleware } from "./middleware";
 import { db } from "db";
@@ -18,7 +19,18 @@ export const app = new Hono<{ Variables: AuthType }>()
     return c.json(contentData);
   });
 
-// Middleware
+// Add CORS middleware FIRST - before other middleware
+app.use(
+  "*",
+  cors({
+    origin: ["http://localhost:5173", "http://localhost:3000"], // Allow both dev server and API server
+    allowHeaders: ["Content-Type", "Authorization", "Cookie"],
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    credentials: true, // Important for cookies/sessions
+  })
+);
+
+// Your existing middleware (should come after CORS)
 app.use("*", async (c, next) => {
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
   if (!session) {
