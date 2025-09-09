@@ -35,10 +35,12 @@ function RouteComponent() {
     <div className="flex h-full w-full justify-center bg-black">
       <div className="flex h-full w-full max-w-7xl flex-col gap-15 max-xl:px-2">
         {/* Carousel Section */}
-        <CarouselSection />
+        <CarouselSection content={content} media={media} />
 
         {/* Featured Today Section */}
-        <FeaturedTodaySection />
+        <FeaturedTodaySection
+          posters={posters.map((poster) => poster.fileUrl)}
+        />
 
         {/* Most Popular Celebrities Section */}
         <CelebritiesSection />

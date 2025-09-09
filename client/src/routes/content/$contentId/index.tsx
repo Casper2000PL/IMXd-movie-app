@@ -367,7 +367,7 @@ function ContentDetailsComponent() {
         }
 
         if (fileTooLarge) {
-          toast.error("Each file must be less than 5MB.");
+          toast.error("Each file must be less than 25MB.");
         }
       }
 
@@ -394,7 +394,7 @@ function ContentDetailsComponent() {
     onDrop: onDropOtherImages,
     onDropRejected: onDropRejectedOtherImages,
     maxFiles: 10,
-    maxSize: 5 * 1024 * 1024, // 5MB
+    maxSize: 25 * 1024 * 1024, // 25MB
     accept: {
       "image/*": [],
     },
@@ -403,10 +403,12 @@ function ContentDetailsComponent() {
   const videos = media.filter((m) => m.type === "video");
   const postersImages = media.filter((m) => m.mediaCategory === "poster");
   const images = media.filter((m) => m.type === "image");
+
+  const trailers = media.filter((m) => m.mediaCategory === "trailer");
+
   const galleryImages = media.filter(
     (m) => m.mediaCategory === "gallery_image",
   );
-  const trailers = media.filter((m) => m.mediaCategory === "trailer");
 
   return (
     <div className="relative w-full">
@@ -644,7 +646,7 @@ function ContentDetailsComponent() {
                                   Click or drag other images to upload
                                 </p>
                                 <p className="text-xs text-stone-400">
-                                  PNG, JPG up to 5MB (max 10 files)
+                                  PNG, JPG up to 25MB (max 10 files)
                                 </p>
                               </div>
                             </div>

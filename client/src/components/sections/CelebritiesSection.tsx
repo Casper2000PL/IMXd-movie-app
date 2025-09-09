@@ -1,14 +1,11 @@
-import { celebsDB } from "@/lib/images-data";
-import CelebCard from "../celeb-card";
+import { Link } from "@tanstack/react-router";
+import { ChevronRightIcon } from "lucide-react";
 import {
   Carousel,
   CarouselContent,
-  CarouselItem,
   CarouselNextCustom,
   CarouselPreviousCustom,
 } from "../ui/carousel";
-import { Link } from "@tanstack/react-router";
-import { ChevronRightIcon } from "lucide-react";
 
 const CelebritiesSection = () => {
   return (
@@ -35,7 +32,7 @@ const CelebritiesSection = () => {
         }}
       >
         <CarouselContent className="w-full p-0">
-          {celebsDB.map((celeb, index) => (
+          {/* {celebsDB.map((celeb, index) => (
             <CarouselItem
               key={index}
               className="basis-full p-0 sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5"
@@ -44,7 +41,7 @@ const CelebritiesSection = () => {
                 <CelebCard name={celeb.name} image={celeb.image} />
               </div>
             </CarouselItem>
-          ))}
+          ))} */}
         </CarouselContent>
         <CarouselNextCustom />
         <CarouselPreviousCustom />

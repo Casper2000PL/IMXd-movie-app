@@ -1,4 +1,3 @@
-import { mockDb } from "@/lib/images-data";
 import { ListIcon } from "lucide-react";
 import {
   Carousel,
@@ -8,7 +7,11 @@ import {
   CarouselPreviousCustom,
 } from "../ui/carousel";
 
-const FeaturedTodaySection = () => {
+interface FeaturedTodaySectionProps {
+  posters: string[];
+}
+
+const FeaturedTodaySection = ({ posters }: FeaturedTodaySectionProps) => {
   return (
     <section className="flex w-full flex-col gap-5">
       <h1 className="text-custom-yellow-100 font-roboto text-2xl font-bold xl:text-3xl">
@@ -29,24 +32,24 @@ const FeaturedTodaySection = () => {
               <div className="flex p-0">
                 <div className="w-100">
                   <div className="group relative grid cursor-pointer grid-cols-3 overflow-clip rounded-xl transition duration-300 hover:opacity-85">
-                    <div key={mockDb[0].id} className="border-r-4 border-white">
+                    <div key={posters[0]} className="border-r-4 border-white">
                       <img
-                        src={mockDb[0].poster}
-                        alt={mockDb[0].title}
+                        src={posters[0]}
+                        alt="Poster 1"
                         className="h-full w-full mask-b-from-80% mask-b-to-100% object-cover"
                       />
                     </div>
-                    <div key={mockDb[1].id} className="border-r-4 border-white">
+                    <div key={posters[1]} className="border-r-4 border-white">
                       <img
-                        src={mockDb[1].poster}
-                        alt={mockDb[1].title}
+                        src={posters[1]}
+                        alt="Poster 2"
                         className="h-full w-full mask-b-from-80% mask-b-to-100% object-cover"
                       />
                     </div>
-                    <div key={mockDb[2].id}>
+                    <div key={posters[2]}>
                       <img
-                        src={mockDb[2].poster}
-                        alt={mockDb[2].title}
+                        src={posters[2]}
+                        alt="Poster 3"
                         className="h-full w-full mask-b-from-80% mask-b-to-100% object-cover"
                       />
                     </div>
@@ -76,24 +79,24 @@ const FeaturedTodaySection = () => {
               <div className="flex p-0">
                 <div className="w-100">
                   <div className="group relative grid cursor-pointer grid-cols-3 overflow-clip rounded-xl transition duration-300 hover:opacity-85">
-                    <div key={mockDb[3].id} className="border-r-4 border-white">
+                    <div key={posters[3]} className="border-r-4 border-white">
                       <img
-                        src={mockDb[3].poster}
-                        alt={mockDb[3].title}
+                        src={posters[3]}
+                        alt="Poster 4"
                         className="h-full w-full mask-b-from-80% mask-b-to-100% object-cover"
                       />
                     </div>
-                    <div key={mockDb[1].id} className="border-r-4 border-white">
+                    <div key={posters[1]} className="border-r-4 border-white">
                       <img
-                        src={mockDb[1].poster}
-                        alt={mockDb[1].title}
+                        src={posters[1]}
+                        alt="Poster 2"
                         className="h-full w-full mask-b-from-80% mask-b-to-100% object-cover"
                       />
                     </div>
-                    <div key={mockDb[0].id}>
+                    <div key={posters[0]}>
                       <img
-                        src={mockDb[0].poster}
-                        alt={mockDb[0].title}
+                        src={posters[0]}
+                        alt="Poster 1"
                         className="h-full w-full mask-b-from-80% mask-b-to-100% object-cover"
                       />
                     </div>

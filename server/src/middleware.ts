@@ -1,9 +1,10 @@
 import { createMiddleware } from "hono/factory";
 import { auth } from "lib/auth";
+import type { User } from "lib/auth";
 
 export type HonoEnv = {
   Variables: {
-    user: typeof auth.$Infer.Session.user;
+    user: User;
     session: typeof auth.$Infer.Session.session;
   };
 };
@@ -15,7 +16,7 @@ export const authMiddleware = createMiddleware<HonoEnv>(async (c, next) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  c.set("user", session.user);
+  c.set("user", session.user as User);
   c.set("session", session.session);
   return next();
 });

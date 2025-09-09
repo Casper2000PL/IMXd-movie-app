@@ -1,6 +1,6 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
-import { cors } from "hono/cors"; // Add this import
+import { cors } from "hono/cors";
 import { auth, type AuthType, type User } from "../lib/auth";
 import { authMiddleware } from "./middleware";
 import { db } from "db";
