@@ -1,4 +1,4 @@
-import { getUserById } from "@/api/user";
+import { getUserById, updateUser } from "@/api/user";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -37,7 +37,7 @@ export const Route = createFileRoute("/profile/$profileId/edit-profile")({
 });
 
 const formSchema = z.object({
-  username: z.string().min(2).max(50),
+  username: z.string().min(2).max(20),
   //bio: z.string().max(160).optional(),
 });
 
@@ -51,10 +51,14 @@ function RouteComponent() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log(values);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    console.log("Values: ", values);
+
+    const formData = {
+      name: values.username,
+    };
+
+    await updateUser(profileInfo.id, formData);
   }
 
   return (

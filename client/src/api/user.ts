@@ -1,5 +1,7 @@
+import { toast } from "sonner";
 import { User } from "../../../server/lib/auth";
 import { client } from "../../../server/src/client";
+import z from "zod";
 
 export const getUserById = async (id: string): Promise<User> => {
   try {
@@ -15,6 +17,44 @@ export const getUserById = async (id: string): Promise<User> => {
     }
   } catch (error) {
     console.error("Error fetching user by ID:", error);
+    throw error;
+  }
+};
+
+export const updateUserSchema = z.object({
+  name: z.string().min(2).max(20),
+});
+
+// In your frontend API file
+export const updateUser = async (
+  id: string,
+  formData: z.infer<typeof updateUserSchema>,
+): Promise<User> => {
+  try {
+    const response = await client.api.user[":id"].$put({
+      param: { id },
+      form: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Error response: ", errorData);
+      toast.error(
+        "Failed to update user: " + (errorData.error || response.statusText),
+      );
+      throw new Error(errorData.error || "Failed to update user");
+    } else {
+      const updatedUser = await response.json();
+      console.log("Success response: ", updatedUser);
+      toast.success("User updated successfully with name: " + formData.name);
+      return updatedUser; // Return the updated user data
+    }
+  } catch (error) {
+    console.error("Error updating user:", error);
+    toast.error(
+      "Failed to update user: " +
+        (error instanceof Error ? error.message : String(error)),
+    );
     throw error;
   }
 };
