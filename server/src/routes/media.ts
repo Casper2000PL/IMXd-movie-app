@@ -52,4 +52,28 @@ export const mediaRouter = new Hono()
         500
       );
     }
+  })
+  .put("/:id", zValidator("form", createMediaSchema), async (c) => {
+    try {
+      const id = c.req.param("id");
+
+      const validatedData = c.req.valid("form");
+
+      const updatedMedia = await db
+        .update(media)
+        .set(validatedData)
+        .where(eq(media.id, id))
+        .returning();
+
+      return c.json(updatedMedia, 200);
+    } catch (error) {
+      console.error("Error updating media:", error);
+      return c.json(
+        {
+          error: "Failed to update media",
+          details: error,
+        },
+        500
+      );
+    }
   });

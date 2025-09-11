@@ -1,4 +1,4 @@
-import { getUserById, updateUser } from "@/api/user";
+import { deleteUserImage, getUserById, updateUser } from "@/api/user";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -61,6 +61,10 @@ function RouteComponent() {
     await updateUser(profileInfo.id, formData);
   }
 
+  async function onDeleteImage() {
+    await deleteUserImage(profileInfo.id);
+  }
+
   return (
     <div className="w-full">
       <div className="w-full bg-gray-800">
@@ -109,7 +113,10 @@ function RouteComponent() {
                     />
                   </label>
                 </div>
-                <button className="hover:bg-destructive/10 text-destructive flex w-fit cursor-pointer items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold transition">
+                <button
+                  className="hover:bg-destructive/10 text-destructive flex w-fit cursor-pointer items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold transition"
+                  onClick={onDeleteImage}
+                >
                   <Trash2Icon size={16} strokeWidth={2.5} />
                   Delete image
                 </button>

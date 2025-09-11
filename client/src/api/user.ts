@@ -58,3 +58,34 @@ export const updateUser = async (
     throw error;
   }
 };
+
+export const deleteUserImage = async (id: string): Promise<User> => {
+  try {
+    const response = await client.api.user[":id"].$put({
+      param: { id },
+      form: { image: "" },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Error response: ", errorData);
+      toast.error(
+        "Failed to delete user image: " +
+          (errorData.error || response.statusText),
+      );
+      throw new Error(errorData.error || "Failed to delete user image");
+    } else {
+      const updatedUser = await response.json();
+      console.log("Success response: ", updatedUser);
+      toast.success("User image deleted successfully");
+      return updatedUser;
+    }
+  } catch (error) {
+    console.error("Error deleting user image:", error);
+    toast.error(
+      "Failed to delete user image: " +
+        (error instanceof Error ? error.message : String(error)),
+    );
+    throw error;
+  }
+};

@@ -6,7 +6,9 @@ import { Hono } from "hono";
 import z from "zod";
 
 const updateUserSchema = z.object({
-  name: z.string().min(2).max(20),
+  name: z.string().min(2).max(20).optional(),
+  email: z.email().optional(),
+  image: z.string().optional(),
 });
 
 export const userRouter = new Hono()
@@ -42,6 +44,9 @@ export const userRouter = new Hono()
         .update(user)
         .set({
           name: validatedData.name,
+          email: validatedData.email,
+          image: validatedData.image,
+          updatedAt: new Date(),
         })
         .where(eq(user.id, id))
         .returning();
