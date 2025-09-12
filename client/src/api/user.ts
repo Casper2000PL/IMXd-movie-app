@@ -61,7 +61,6 @@ export const updateUser = async (
 
 export const deleteUserImage = async (id: string): Promise<User> => {
   try {
-    // First, delete the image from AWS
     const responseAWS = await client.api.user["profile-image"][
       ":userId"
     ].$delete({

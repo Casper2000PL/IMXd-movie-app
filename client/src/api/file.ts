@@ -1,4 +1,5 @@
 import { client } from "../../../server/src/client";
+import { deleteUserImage } from "./user";
 
 interface S3FileUploadRequest {
   file: File;
@@ -68,6 +69,14 @@ export const uploadProfileImage = async (
 ): Promise<Response> => {
   console.log("Uploading profile image for user: ", userId);
   console.log("File details: ", file.name, file.size, file.type);
+
+  const user = await client.api.user[":id"].$get({ param: { id: userId } });
+  const userData = await user.json();
+
+  if (userData.image !== "") {
+    console.log("User already has a profile image, deleting existing one.");
+    await deleteUserImage(userId);
+  }
 
   const response = await client.api.file["upload-profile-image"].$post({
     json: {
