@@ -50,7 +50,7 @@ const Navbar = () => {
                   <img
                     src={user.image}
                     alt={user.name.charAt(0)}
-                    className="size-6 rounded-full object-cover"
+                    className="size-6 rounded-full object-cover object-top"
                   />
                 ) : (
                   <CircleUserRoundIcon className="size-6" />

@@ -10,13 +10,36 @@ export const mediaRouter = new Hono()
     const mediaData = await db.select().from(media);
     return c.json(mediaData);
   })
-  .get("/:contentId", async (c) => {
+  .get("/:id", async (c) => {
+    try {
+      const id = c.req.param("id");
+      const mediaData = await db.select().from(media).where(eq(media.id, id));
+
+      if (mediaData.length === 0) {
+        return c.json({ error: "Media not found" }, 404);
+      }
+
+      return c.json(mediaData[0], 200);
+    } catch (error) {
+      console.error("Error fetching media by ID:", error);
+      return c.json(
+        {
+          error: "Failed to fetch media",
+          details: error,
+        },
+        500
+      );
+    }
+  })
+  .get("/content/:contentId", async (c) => {
     try {
       const contentId = c.req.param("contentId");
       const mediaData = await db
         .select()
         .from(media)
         .where(eq(media.contentId, contentId));
+
+      console.log("Fetched media data backend:", mediaData);
 
       // Return empty array if no results found
       return c.json(mediaData);
@@ -71,6 +94,30 @@ export const mediaRouter = new Hono()
       return c.json(
         {
           error: "Failed to update media",
+          details: error,
+        },
+        500
+      );
+    }
+  })
+  .delete("/:id", async (c) => {
+    try {
+      const id = c.req.param("id");
+      const deletedCount = await db
+        .delete(media)
+        .where(eq(media.id, id))
+        .returning();
+
+      if (deletedCount.length === 0) {
+        return c.json({ error: "Media not found" }, 404);
+      }
+
+      return c.json({ message: "Media deleted successfully" }, 200);
+    } catch (error) {
+      console.error("Error deleting media:", error);
+      return c.json(
+        {
+          error: "Failed to delete media",
           details: error,
         },
         500

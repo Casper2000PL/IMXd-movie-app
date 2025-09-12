@@ -92,17 +92,20 @@ function RouteComponent() {
         <div className="flex w-full flex-col items-start justify-between gap-8 lg:flex-row lg:justify-between">
           <div className="flex gap-6">
             <div className="flex flex-col items-center justify-center gap-4">
-              {profileInfo.image ? (
-                <img
-                  src={profileInfo.image}
-                  alt="Profile Picture"
-                  className="size-20 rounded-full lg:size-35"
-                />
-              ) : (
-                <div className="rounded-full bg-white/5 p-6">
-                  <User2Icon className="size-23 text-stone-500" />
-                </div>
-              )}
+              <div className="size-20 lg:size-35">
+                {profileInfo.image ? (
+                  <img
+                    src={profileInfo.image}
+                    alt="Profile Picture"
+                    className="h-full w-full rounded-full object-cover object-top"
+                  />
+                ) : (
+                  <div className="rounded-full bg-white/5 p-6">
+                    <User2Icon className="size-23 text-stone-500" />
+                  </div>
+                )}
+              </div>
+
               {profileInfo.role === "ADMIN" ? (
                 <Badge
                   variant="destructive"

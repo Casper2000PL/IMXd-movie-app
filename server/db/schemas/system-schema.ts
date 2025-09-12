@@ -29,6 +29,7 @@ export const mediaCategoryEnum = pgEnum("media_category", [
   "gallery_image",
   "trailer",
   "clip",
+  "profile_image",
 ]);
 export const statusEnum = pgEnum("status", [
   "released",
@@ -123,6 +124,7 @@ export const media = pgTable(
     mediaCategory: mediaCategoryEnum("media_category").notNull(),
     title: varchar("title", { length: 255 }),
     fileSize: bigint("file_size", { mode: "number" }), // File size in bytes
+    key: varchar("key", { length: 255 }),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
   },

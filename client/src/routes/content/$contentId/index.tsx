@@ -83,6 +83,9 @@ function ContentDetailsComponent() {
   const { content, media } = Route.useLoaderData();
   const { contentId } = Route.useParams();
 
+  console.log("Content data:", content);
+  console.log("Media data:", media);
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {

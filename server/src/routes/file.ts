@@ -10,6 +10,8 @@ import { z } from "zod";
 import { S3 } from "../../lib/s3client";
 import { db } from "db";
 import { media } from "db/schemas/system-schema";
+import { user } from "db/schemas/auth-schema";
+import { eq } from "drizzle-orm";
 
 const uploadRequestSchema = z.object({
   fileName: z.string(),
@@ -21,7 +23,104 @@ const uploadRequestSchema = z.object({
   type: z.enum(["video", "image"]),
 });
 
+const uploadProfileImageSchema = z.object({
+  fileName: z.string(),
+  contentType: z.string(),
+  size: z.number(),
+  userId: z.string(),
+});
+
 export const fileRouter = new Hono()
+  .post(
+    "/upload-profile-image",
+    zValidator("json", uploadProfileImageSchema),
+    async (c) => {
+      try {
+        const validation = c.req.valid("json");
+        const { fileName, contentType, size, userId } = validation;
+
+        const uniqueKey = `profile_image-${fileName}`;
+
+        // Check if file already exists in S3
+        try {
+          const checkCommand = new GetObjectCommand({
+            Bucket: process.env.S3_BUCKET_NAME,
+            Key: uniqueKey,
+          });
+          await S3.send(checkCommand);
+
+          // If we reach here, file exists
+          console.log(
+            "Profile image with name",
+            fileName,
+            "already exists in S3 bucket"
+          );
+          return c.json({ error: "File already exists" }, 409);
+        } catch (error: any) {
+          // If error code is NoSuchKey, file doesn't exist - continue with upload
+          if (error.name !== "NoSuchKey") {
+            // Some other error occurred
+            console.error("Error checking file existence:", error);
+            return c.json(
+              { error: { message: "Failed to check file existence" } },
+              500
+            );
+          }
+          // File doesn't exist, continue with upload process
+        }
+
+        const command = new PutObjectCommand({
+          Bucket: process.env.S3_BUCKET_NAME,
+          Key: uniqueKey,
+          ContentType: contentType,
+          ContentLength: size,
+        });
+
+        const presignedUrl = await getSignedUrl(S3, command, {
+          expiresIn: 360, // 6 minutes
+        });
+
+        const publicUrl = `https://${process.env.S3_BUCKET_NAME}.t3.storage.dev/${uniqueKey}`;
+
+        // Insert media record into database
+        try {
+          await db.insert(media).values({
+            fileUrl: publicUrl,
+            type: "image",
+            mediaCategory: "profile_image",
+            title: fileName,
+            fileSize: size,
+            key: uniqueKey,
+          });
+        } catch (error) {
+          console.error("Error inserting media record into database:", error);
+          return c.json(
+            { error: `Failed to insert media record: ${error}` },
+            500
+          );
+        }
+
+        try {
+          await db
+            .update(user)
+            .set({ image: publicUrl })
+            .where(eq(user.id, userId))
+            .returning();
+        } catch (error) {}
+
+        const response = {
+          presignedUrl,
+          publicUrl,
+          key: uniqueKey,
+        };
+
+        return c.json(response, { status: 200 });
+      } catch (error) {
+        console.error("Error generating presigned URL:", error);
+        return c.json({ error: "Failed to generate presigned URL" }, 500);
+      }
+    }
+  )
   .post("/", zValidator("json", uploadRequestSchema), async (c) => {
     try {
       const validation = c.req.valid("json");
@@ -83,6 +182,7 @@ export const fileRouter = new Hono()
           mediaCategory,
           title: fileName,
           fileSize: size,
+          key: uniqueKey,
         });
       } catch (error) {
         console.error("Error inserting media record into database:", error);
@@ -104,8 +204,6 @@ export const fileRouter = new Hono()
       return c.json({ error: "Failed to generate presigned URL" }, 500);
     }
   })
-
-  // Get permanent URL for uploaded file
   .get("/:key", async (c) => {
     try {
       const key = c.req.param("key");
@@ -128,7 +226,6 @@ export const fileRouter = new Hono()
       return c.json({ error: "Failed to generate URL" }, { status: 500 });
     }
   })
-
   .delete("/:key", async (c) => {
     try {
       const key = c.req.param("key");

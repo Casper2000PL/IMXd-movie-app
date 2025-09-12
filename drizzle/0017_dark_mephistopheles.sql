@@ -1,0 +1,1 @@
+ALTER TABLE "media" ADD COLUMN "key" varchar(255) NOT NULL;

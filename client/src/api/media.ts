@@ -8,6 +8,7 @@ export interface Media {
   mediaCategory: "poster" | "gallery_image" | "trailer" | "clip";
   title?: string;
   fileSize: number;
+  key?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -73,9 +74,11 @@ export const getMediaByContentId = async (
   contentId: string,
 ): Promise<Media[]> => {
   try {
-    const response = await client.api.media[":contentId"].$get({
+    const response = await client.api.media.content[":contentId"].$get({
       param: { contentId },
     });
+
+    console.log("Response from getMediaByContentId:", response);
 
     if (response.ok) {
       const data = await response.json();

@@ -45,8 +45,42 @@ export const s3FileUpload = async ({
 
   if (!response.ok) {
     console.log("Failed to upload file: ", response);
-
     let errorMessage = `Failed to upload file: ${response.statusText}`;
+
+    try {
+      const errorData: ApiErrorResponse = await response.json();
+      if (errorData.error) {
+        errorMessage = extractErrorMessage(errorData.error);
+      }
+    } catch (parseError) {
+      console.log("Could not parse error response:", parseError);
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return response;
+};
+
+export const uploadProfileImage = async (
+  userId: string,
+  file: File,
+): Promise<Response> => {
+  console.log("Uploading profile image for user: ", userId);
+  console.log("File details: ", file.name, file.size, file.type);
+
+  const response = await client.api.file["upload-profile-image"].$post({
+    json: {
+      fileName: file.name,
+      contentType: file.type,
+      size: file.size,
+      userId,
+    },
+  });
+
+  if (!response.ok) {
+    console.log("Failed to upload profile image: ", response);
+    let errorMessage = `Failed to upload profile image: ${response.statusText}`;
 
     try {
       const errorData: ApiErrorResponse = await response.json();
@@ -68,7 +102,6 @@ export const s3FileDelete = async (key: string) => {
 
   if (!response.ok) {
     console.log("Failed to delete file: ", response);
-
     let errorMessage = `Failed to delete file: ${response.statusText}`;
 
     try {

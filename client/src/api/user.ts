@@ -61,6 +61,26 @@ export const updateUser = async (
 
 export const deleteUserImage = async (id: string): Promise<User> => {
   try {
+    // First, delete the image from AWS
+    const responseAWS = await client.api.user["profile-image"][
+      ":userId"
+    ].$delete({
+      param: { userId: id },
+    });
+
+    if (!responseAWS.ok) {
+      const errorData = await responseAWS.json();
+      console.error("Error response from AWS: ", errorData);
+      toast.error(
+        "Failed to delete user image from AWS: " +
+          (errorData || responseAWS.statusText),
+      );
+      throw new Error("Failed to delete user image from AWS");
+    }
+
+    // Only proceed to update the user if AWS deletion was successful
+    console.log("AWS image deletion successful");
+
     const response = await client.api.user[":id"].$put({
       param: { id },
       form: { image: "" },
@@ -70,16 +90,16 @@ export const deleteUserImage = async (id: string): Promise<User> => {
       const errorData = await response.json();
       console.error("Error response: ", errorData);
       toast.error(
-        "Failed to delete user image: " +
+        "Failed to update user record: " +
           (errorData.error || response.statusText),
       );
-      throw new Error(errorData.error || "Failed to delete user image");
-    } else {
-      const updatedUser = await response.json();
-      console.log("Success response: ", updatedUser);
-      toast.success("User image deleted successfully");
-      return updatedUser;
+      throw new Error(errorData.error || "Failed to update user record");
     }
+
+    const updatedUser = await response.json();
+    console.log("Success response: ", updatedUser);
+    toast.success("User image deleted successfully");
+    return updatedUser;
   } catch (error) {
     console.error("Error deleting user image:", error);
     toast.error(
