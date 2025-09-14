@@ -1,6 +1,6 @@
 import { createMiddleware } from "hono/factory";
-import { auth } from "lib/auth";
-import type { User } from "shared/src/types/index";
+import { auth } from "server/lib/auth";
+import type { User } from "shared/dist/shared/src/types/index";
 
 export type HonoEnv = {
   Variables: {

@@ -1,6 +1,6 @@
 import { client } from "../../../server/src/client";
 import { Media } from "./media";
-
+import {} from "server/src/index";
 // Types based on your schema
 export type ContentType = "movie" | "show";
 export type StatusType =

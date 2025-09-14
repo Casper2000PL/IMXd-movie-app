@@ -1,11 +1,11 @@
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { zValidator } from "@hono/zod-validator";
-import { db } from "db";
-import { user } from "db/schemas/auth-schema";
-import { media } from "db/schemas/system-schema";
+import { db } from "server/db";
+import { user } from "server/db/schemas/auth-schema";
+import { media } from "server/db/schemas/system-schema";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
-import { S3 } from "lib/s3client";
+import { S3 } from "server/lib/s3client";
 import z from "zod";
 
 const updateUserSchema = z.object({

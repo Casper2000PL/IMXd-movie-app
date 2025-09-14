@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
-import { db } from "db";
-import { media } from "db/schemas/system-schema";
+import { db } from "server/db";
+import { media } from "server/db/schemas/system-schema";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { createMediaSchema } from "../../../shared/src/schemas/media";

@@ -7,10 +7,10 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
-import { S3 } from "../../lib/s3client";
-import { db } from "db";
-import { media } from "db/schemas/system-schema";
-import { user } from "db/schemas/auth-schema";
+import { S3 } from "server/lib/s3client";
+import { db } from "server/db";
+import { media } from "server/db/schemas/system-schema";
+import { user } from "server/db/schemas/auth-schema";
 import { eq } from "drizzle-orm";
 
 const uploadRequestSchema = z.object({

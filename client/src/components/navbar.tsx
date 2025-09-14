@@ -8,9 +8,9 @@ import NavButton from "./nav-button";
 import { ChevronDownIcon, CircleUserRoundIcon } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { authClient } from "@/lib/auth-client";
-import { User } from "../../../server/lib/auth";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { User } from "shared/src/types";
 
 const Navbar = () => {
   const { data: session } = authClient.useSession();

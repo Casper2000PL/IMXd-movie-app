@@ -1,7 +1,8 @@
 import { toast } from "sonner";
-import { User } from "../../../server/lib/auth";
+//import { User } from "../../../server/lib/auth";
 import { client } from "../../../server/src/client";
 import z from "zod";
+import { User } from "shared/src/types";
 
 export const getUserById = async (id: string): Promise<User> => {
   try {

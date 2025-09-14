@@ -1,5 +1,5 @@
 import { createInsertSchema } from "drizzle-zod";
-import { content } from "../../../server/db/schemas/system-schema";
+import { content } from "@server/db/schemas/system-schema";
 import * as z from "zod";
 
 const insertContentSchema = createInsertSchema(content);

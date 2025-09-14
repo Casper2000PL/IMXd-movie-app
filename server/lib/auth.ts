@@ -1,9 +1,9 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { openAPI } from "better-auth/plugins";
-import { db } from "../db/index";
-import type { User } from "shared/src/types/index";
-import * as authSchema from "../db/schemas/auth-schema";
+import type { User } from "shared/dist/shared/src/types/index";
+import * as authSchema from "server/db/schemas/auth-schema";
+import { db } from "server/db";
 
 export const auth: ReturnType<typeof betterAuth> = betterAuth({
   database: drizzleAdapter(db, {
@@ -39,16 +39,6 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
 });
 
 export type Session = typeof auth.$Infer.Session;
-// export type User = {
-//   id: string;
-//   name: string;
-//   email: string;
-//   emailVerified: boolean;
-//   image: string | null;
-//   role?: string | null;
-//   createdAt: Date;
-//   updatedAt: Date;
-// };
 
 export type AuthType = {
   user: User | null;

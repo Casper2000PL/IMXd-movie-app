@@ -1,9 +1,8 @@
-import { db } from "db";
-import { content } from "db/schemas/system-schema";
+import { db } from "server/db";
+import { content } from "server/db/schemas/system-schema";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-// import { createContentSchema } from "@shared/schemas/content";
-import { createContentSchema } from "../../../shared/src/schemas/content";
+import { createContentSchema } from "shared/dist/shared/src/schemas/content";
 import { eq } from "drizzle-orm";
 
 export const contentRouter = new Hono()

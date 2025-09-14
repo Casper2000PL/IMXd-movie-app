@@ -1,17 +1,18 @@
-import { client } from "../../../server/src/client";
+import { client } from "server/src/client";
+import type { Media } from "server/db/schemas/system-schema";
 
-export interface Media {
-  id: string;
-  contentId?: string;
-  fileUrl: string;
-  type: "image" | "video";
-  mediaCategory: "poster" | "gallery_image" | "trailer" | "clip";
-  title?: string;
-  fileSize: number;
-  key?: string;
-  createdAt: string;
-  updatedAt: string;
-}
+// export interface Media {
+//   id: string;
+//   contentId?: string;
+//   fileUrl: string;
+//   type: "image" | "video";
+//   mediaCategory: "poster" | "gallery_image" | "trailer" | "clip";
+//   title?: string;
+//   fileSize: number;
+//   key?: string;
+//   createdAt: string;
+//   updatedAt: string;
+// }
 
 interface createMediaProps {
   formData: {

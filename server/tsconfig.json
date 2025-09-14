@@ -11,23 +11,16 @@
     // Types
     "types": ["bun-types"],
 
-    // Output settings - Fixed to prevent conflicts
+    // Output settings
     "declaration": true,
-    "outDir": "./dist", // Make sure it's relative to this config
+    "outDir": "dist",
     "noEmit": false,
     "emitDecoratorMetadata": true,
 
     // Module resolution
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": false,
-
-    // Override root settings for server
-    "baseUrl": "./",
-    "paths": {
-      "@shared/*": ["../shared/src/*"],
-      "@client/*": ["../client/src/*"]
-    }
+    "allowImportingTsExtensions": false
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "../client/**/*", "../shared/**/*"]
+  "exclude": ["node_modules", "dist"]
 }
