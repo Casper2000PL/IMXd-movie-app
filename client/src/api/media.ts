@@ -1,18 +1,4 @@
 import { client } from "server/src/client";
-import type { Media } from "server/db/schemas/system-schema";
-
-// export interface Media {
-//   id: string;
-//   contentId?: string;
-//   fileUrl: string;
-//   type: "image" | "video";
-//   mediaCategory: "poster" | "gallery_image" | "trailer" | "clip";
-//   title?: string;
-//   fileSize: number;
-//   key?: string;
-//   createdAt: string;
-//   updatedAt: string;
-// }
 
 interface createMediaProps {
   formData: {
@@ -22,7 +8,12 @@ interface createMediaProps {
   };
   contentId: string;
   type: "image" | "video";
-  mediaCategory: "poster" | "gallery_image" | "trailer" | "clip";
+  mediaCategory:
+    | "poster"
+    | "gallery_image"
+    | "trailer"
+    | "clip"
+    | "profile_image";
 }
 
 export const createMedia = async ({
@@ -42,7 +33,6 @@ export const createMedia = async ({
         fileSize: formData.fileSize.toString(),
       },
     });
-
     if (response.ok) {
       const data = await response.json();
       return data;
@@ -55,10 +45,9 @@ export const createMedia = async ({
   }
 };
 
-export const getMedia = async (): Promise<Media[]> => {
+export const getMedia = async () => {
   try {
     const response = await client.api.media.$get();
-
     if (response.ok) {
       const data = await response.json();
       return data;
@@ -71,24 +60,17 @@ export const getMedia = async (): Promise<Media[]> => {
   }
 };
 
-export const getMediaByContentId = async (
-  contentId: string,
-): Promise<Media[]> => {
+export const getMediaByContentId = async (contentId: string) => {
   try {
     const response = await client.api.media.content[":contentId"].$get({
       param: { contentId },
     });
-
     console.log("Response from getMediaByContentId:", response);
-
     if (response.ok) {
       const data = await response.json();
       return data;
     } else {
-      //throw new Error(`HTTP error! status: ${response.status}`);
-
       // TODO getMediaByContentId always returns error, empty media record in media table should be created along with the content
-
       return [];
     }
   } catch (error) {

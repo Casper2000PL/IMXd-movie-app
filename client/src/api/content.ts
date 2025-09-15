@@ -1,35 +1,4 @@
-import { client } from "../../../server/src/client";
-import { Media } from "./media";
-import {} from "server/src/index";
-// Types based on your schema
-export type ContentType = "movie" | "show";
-export type StatusType =
-  | "released"
-  | "upcoming"
-  | "in_production"
-  | "canceled"
-  | "ended";
-
-export interface Content {
-  id: string;
-  title: string;
-  type: ContentType;
-  description?: string;
-  releaseDate?: string; // ISO date string
-  runtime?: number;
-  rating?: string; // decimal as string
-  status?: StatusType;
-  language?: string;
-  numberOfSeasons?: number;
-  numberOfEpisodes?: number;
-  createdAt: string; // ISO timestamp
-  updatedAt: string; // ISO timestamp
-}
-
-export interface ContentWithMedia {
-  content: Content;
-  media: Media[];
-}
+import { client } from "server/src/client";
 
 export interface CreateContentForm {
   title: string;
@@ -43,10 +12,7 @@ export interface CreateContentForm {
   numberOfEpisodes?: string;
 }
 
-// For the array response from getContent()
-export type ContentArray = Content[];
-
-export const getContent = async (): Promise<ContentArray> => {
+export const getContent = async () => {
   try {
     const response = await client.api.content.$get();
 
@@ -62,7 +28,7 @@ export const getContent = async (): Promise<ContentArray> => {
   }
 };
 
-export const getContentById = async (id: string): Promise<Content> => {
+export const getContentById = async (id: string) => {
   try {
     // Use the correct endpoint structure for URL parameters
     const response = await client.api.content[":id"].$get({
@@ -81,9 +47,7 @@ export const getContentById = async (id: string): Promise<Content> => {
   }
 };
 
-export const createContent = async (
-  formData: CreateContentForm,
-): Promise<Content> => {
+export const createContent = async (formData: CreateContentForm) => {
   try {
     console.log("API call - Form data being sent:", formData);
     const response = await client.api.content.$post({

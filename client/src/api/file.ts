@@ -1,4 +1,4 @@
-import { client } from "../../../server/src/client";
+import { client } from "server/src/client";
 import { deleteUserImage } from "./user";
 
 interface S3FileUploadRequest {
@@ -73,7 +73,14 @@ export const uploadProfileImage = async (
   const user = await client.api.user[":id"].$get({ param: { id: userId } });
   const userData = await user.json();
 
-  if (userData.image !== "") {
+  // Check if the response contains an error
+  if ("error" in userData) {
+    console.log("Error fetching user data:", userData.error);
+    throw new Error(`Failed to fetch user data: ${userData.error}`);
+  }
+
+  // Now TypeScript knows userData has the success type with image property
+  if (userData.image && userData.image !== "") {
     console.log("User already has a profile image, deleting existing one.");
     await deleteUserImage(userId);
   }

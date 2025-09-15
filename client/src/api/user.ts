@@ -1,10 +1,8 @@
 import { toast } from "sonner";
-//import { User } from "../../../server/lib/auth";
-import { client } from "../../../server/src/client";
+import { client } from "server/src/client";
 import z from "zod";
-import { User } from "shared/src/types";
 
-export const getUserById = async (id: string): Promise<User> => {
+export const getUserById = async (id: string) => {
   try {
     const response = await client.api.user[":id"].$get({
       param: { id }, // Pass as param object, not query
@@ -30,7 +28,7 @@ export const updateUserSchema = z.object({
 export const updateUser = async (
   id: string,
   formData: z.infer<typeof updateUserSchema>,
-): Promise<User> => {
+) => {
   try {
     const response = await client.api.user[":id"].$put({
       param: { id },
@@ -60,7 +58,7 @@ export const updateUser = async (
   }
 };
 
-export const deleteUserImage = async (id: string): Promise<User> => {
+export const deleteUserImage = async (id: string) => {
   try {
     const responseAWS = await client.api.user["profile-image"][
       ":userId"

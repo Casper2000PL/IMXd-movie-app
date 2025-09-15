@@ -3,7 +3,7 @@ import { db } from "server/db";
 import { media } from "server/db/schemas/system-schema";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
-import { createMediaSchema } from "../../../shared/src/schemas/media";
+import { createMediaSchema } from "shared/src/schemas/media";
 
 export const mediaRouter = new Hono()
   .get("/", async (c) => {

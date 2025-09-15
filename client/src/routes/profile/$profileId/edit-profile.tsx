@@ -390,9 +390,13 @@ function RouteComponent() {
                     <Button
                       type="submit"
                       className="mt-6"
-                      disabled={uploadingImage.uploading}
+                      disabled={form.formState.isSubmitting}
                     >
-                      Save
+                      {form.formState.isSubmitting ? (
+                        <Loader className="ml-2 size-4 animate-spin" />
+                      ) : (
+                        "Save"
+                      )}
                     </Button>
                   </FormItem>
                 )}
