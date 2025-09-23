@@ -509,11 +509,65 @@ function ContentDetailsComponent() {
             <div className="flex h-100 w-full gap-1">
               <div className="flex-1">
                 {postersImages.length > 0 ? (
-                  <PosterCard
-                    poster={postersImages[0].fileUrl}
-                    className="h-full w-full"
-                    withRibbon
-                  />
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <PosterCard
+                        poster={postersImages[0].fileUrl}
+                        className="h-full w-full"
+                        withRibbon
+                        onRibbonClick={() => {
+                          console.log("Add to collection clicked");
+                        }}
+                      />
+                    </DialogTrigger>
+                    <DialogContent
+                      className="flex h-full max-h-screen !w-full !max-w-full flex-col items-center rounded-none border-2 border-none bg-black px-2 pt-4 pb-0 text-white outline-none md:px-4 xl:px-10"
+                      showCloseButton={false}
+                    >
+                      <div className="h-full w-full">
+                        <Carousel
+                          className="m-0 h-full w-full p-0"
+                          opts={{
+                            loop: true,
+                            watchDrag: false,
+                            duration: 0,
+                          }}
+                        >
+                          <CarouselContent className="m-0 flex h-full w-full p-0">
+                            {postersImages.map((image, index) => (
+                              <CarouselItem key={index} className="w-full p-0">
+                                <div className="flex h-full w-full flex-col gap-5">
+                                  <div className="flex w-full items-center justify-between px-2">
+                                    <DialogClose className="flex w-fit cursor-pointer items-center justify-center gap-1 rounded-full px-3 py-1.5 transition-all duration-200 hover:bg-white/20 active:bg-white/30">
+                                      <XIcon
+                                        className="size-5"
+                                        strokeWidth={2.5}
+                                      />
+                                      <span className="font-roboto text-sm font-semibold">
+                                        Close
+                                      </span>
+                                    </DialogClose>
+                                    <p className="text-custom-yellow-100 font-roboto text-base">
+                                      {index + 1} of {postersImages.length}
+                                    </p>
+                                  </div>
+                                  <div className="flex h-full w-full justify-center">
+                                    <img
+                                      src={image.fileUrl}
+                                      alt={image.title || "Image title"}
+                                      className="h-full object-cover"
+                                    />
+                                  </div>
+                                </div>
+                              </CarouselItem>
+                            ))}
+                          </CarouselContent>
+                          <CarouselNextCustom />
+                          <CarouselPreviousCustom />
+                        </Carousel>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 ) : (
                   <Dialog>
                     <DialogTrigger asChild>
@@ -840,7 +894,7 @@ function ContentDetailsComponent() {
                                 <div className="flex h-full w-full justify-center">
                                   <img
                                     src={image.fileUrl}
-                                    alt={image.title}
+                                    alt={image.title || "Image title"}
                                     className="h-full object-cover"
                                   />
                                 </div>
