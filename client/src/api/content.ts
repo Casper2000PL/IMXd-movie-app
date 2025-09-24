@@ -78,3 +78,39 @@ export const createContent = async (formData: CreateContentForm) => {
     throw error;
   }
 };
+
+export const updateContent = async (
+  id: string,
+  formData: CreateContentForm,
+) => {
+  try {
+    console.log("API call - Form data being sent:", formData);
+    const response = await client.api.content[":id"].$patch({
+      param: { id },
+      form: {
+        title: formData.title,
+        type: formData.type,
+        description: formData.description,
+        releaseDate: formData.releaseDate,
+        runtime: formData.runtime,
+        language: formData.language,
+        status: formData.status,
+        numberOfSeasons: formData.numberOfSeasons,
+        numberOfEpisodes: formData.numberOfEpisodes,
+      },
+    });
+
+    if (response.ok) {
+      const createdContent = await response.json();
+      console.log("Content updated successfully:", createdContent);
+      return createdContent;
+    } else {
+      const errorText = await response.text();
+      console.error("Server error response:", errorText);
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+    }
+  } catch (error) {
+    console.error("Error updating content:", error);
+    throw error;
+  }
+};

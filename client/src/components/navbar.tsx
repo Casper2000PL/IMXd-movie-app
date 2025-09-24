@@ -36,12 +36,6 @@ const Navbar = () => {
           </div>
         </Link>
 
-        {isLoggedIn && user.role === "ADMIN" && (
-          <NavButton>
-            <Link to="/add-content">Add Content</Link>
-          </NavButton>
-        )}
-
         {isLoggedIn ? (
           <DropdownMenu open={open} onOpenChange={setOpen}>
             <DropdownMenuTrigger asChild>
@@ -93,6 +87,12 @@ const Navbar = () => {
                   Account Settings
                 </Link>
               </DropdownMenuItem>
+              {user.role === "ADMIN" && (
+                <DropdownMenuItem className="bg-red-500/25 py-2.5 pl-4 text-base hover:bg-red-500/50! hover:text-white!">
+                  <Link to="/add-content">Add Content</Link>
+                </DropdownMenuItem>
+              )}
+
               <DropdownMenuItem
                 className="py-2.5 pl-4 text-base hover:bg-white/15! hover:text-white!"
                 asChild

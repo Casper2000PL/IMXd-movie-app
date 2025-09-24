@@ -521,6 +521,7 @@ function ContentDetailsComponent() {
                       />
                     </DialogTrigger>
                     <DialogContent
+                      fullScreen={true}
                       className="flex h-full max-h-screen !w-full !max-w-full flex-col items-center rounded-none border-2 border-none bg-black px-2 pt-4 pb-0 text-white outline-none md:px-4 xl:px-10"
                       showCloseButton={false}
                     >
@@ -782,7 +783,7 @@ function ContentDetailsComponent() {
                         </div>
                       </button>
                     </DialogTrigger>
-                    <DialogContent className="flex h-full max-h-screen !w-full !max-w-full flex-col items-center rounded-none border-2 border-none bg-gray-800 px-2 pt-4 pb-0 text-white outline-none md:px-4 xl:px-10">
+                    <DialogContent className="flex h-full max-h-screen !w-full !max-w-full flex-col items-center rounded-none border-none bg-gray-800 px-2 pt-4 pb-0 text-white outline-none md:px-4 xl:px-10">
                       <DialogHeader>
                         <DialogTitle className="text-center">
                           Add Youtube Trailer
@@ -861,7 +862,8 @@ function ContentDetailsComponent() {
                     </button>
                   </DialogTrigger>
                   <DialogContent
-                    className="flex h-full max-h-screen !w-full !max-w-full flex-col items-center rounded-none border-2 border-none bg-black px-2 pt-4 pb-0 text-white outline-none md:px-4 xl:px-10"
+                    fullScreen={true}
+                    className="flex h-screen w-full flex-col items-center bg-black px-2 pt-4 pb-0 text-white outline-none md:px-4 xl:px-10"
                     showCloseButton={false}
                   >
                     <div className="h-full w-full">

@@ -19,6 +19,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Loader } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
@@ -101,7 +102,7 @@ function RouteComponent() {
 
       // Navigate to the content detail page with the ID
       await navigate({
-        to: `/contentId/${createdContent.id}`,
+        to: `/content/${createdContent.id}`,
         params: { contentId: createdContent.id },
       });
     } catch (error) {
@@ -298,13 +299,17 @@ function RouteComponent() {
             </div>
 
             {/* Submit Button */}
-            <div className="flex justify-end pt-6">
+            <div className="flex justify-center pt-6">
               <Button
                 type="submit"
-                className="px-8"
+                className="bg-custom-yellow-100 hover:bg-custom-yellow-300 w-full max-w-md px-8 py-5 font-semibold text-black"
                 disabled={form.formState.isSubmitting}
               >
-                {form.formState.isSubmitting ? "Adding..." : "Add Content"}
+                {form.formState.isSubmitting ? (
+                  <Loader className="size-4 animate-spin" />
+                ) : (
+                  "Edit"
+                )}
               </Button>
             </div>
           </form>
