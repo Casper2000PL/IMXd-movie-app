@@ -1,7 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { createContent, getContentById, updateContent } from "@/api/content";
+import { getContentById, updateContent } from "@/api/content";
 import { s3FileDelete, s3FileUpload } from "@/api/file";
-import { createMedia, getMediaByContentId } from "@/api/media";
+import {
+  createMedia,
+  deleteImageByKey,
+  getMediaByContentId,
+} from "@/api/media";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -22,7 +26,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Loader } from "lucide-react";
+import { Loader, Trash2Icon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
@@ -481,7 +485,7 @@ function SettingsComponent() {
     <div className="w-full">
       <div className="min-h-[300px] w-full bg-gray-800">
         <div className="mx-auto h-full w-full max-w-7xl">
-          <div className="flex flex-col py-10">
+          <div className="flex flex-col px-4 py-10">
             <Form {...formTextData}>
               <form
                 onSubmit={formTextData.handleSubmit(onSubmitTextData)}
@@ -721,7 +725,60 @@ function SettingsComponent() {
           </div>
         </div>
       </div>
-      <div className="h-[300px] w-full bg-blue-400"></div>
+      <div className="bg-custom-yellow-300 min-h-[300px] w-full">
+        <div className="mx-auto max-w-7xl py-10">
+          <h1 className="font-roboto mb-10 text-center text-4xl font-extrabold text-black">
+            Posters
+          </h1>
+          <div className="grid grid-cols-[repeat(auto-fit,200px)] place-content-center items-end justify-start gap-10">
+            {postersImages.map((m) => (
+              <div key={m.id} className="flex flex-col items-center gap-2">
+                <div className="relative">
+                  <img
+                    src={m.fileUrl}
+                    alt={m.title || "Media Image"}
+                    className="w-[200px] rounded-md object-cover"
+                  />
+                  <button
+                    className="absolute top-2 right-2 cursor-pointer rounded-md bg-red-500 p-2 transition-all duration-200 hover:bg-red-700"
+                    onClick={async () => await deleteImageByKey(m.key!)}
+                  >
+                    <Trash2Icon className="size-5 text-white" />
+                  </button>
+                </div>
+                <div className="w-[200px] truncate text-center text-base font-semibold text-black">
+                  {m.title}
+                </div>
+              </div>
+            ))}
+          </div>
+          <h1 className="font-roboto my-10 text-center text-4xl font-extrabold text-black">
+            Gallery Images
+          </h1>
+          <div className="grid grid-cols-[repeat(auto-fit,200px)] place-content-center items-end justify-start gap-10">
+            {galleryImages.map((m) => (
+              <div key={m.id} className="flex flex-col items-center gap-2">
+                <div className="relative">
+                  <img
+                    src={m.fileUrl}
+                    alt={m.title || "Media Image"}
+                    className="w-[200px] rounded-md object-cover"
+                  />
+                  <button
+                    className="absolute top-2 right-2 cursor-pointer rounded-md bg-red-500 p-2 transition-all duration-200 hover:bg-red-700"
+                    onClick={async () => await deleteImageByKey(m.key!)}
+                  >
+                    <Trash2Icon className="size-5 text-white" />
+                  </button>
+                </div>
+                <div className="w-[200px] truncate text-center text-base font-semibold text-black">
+                  {m.title}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

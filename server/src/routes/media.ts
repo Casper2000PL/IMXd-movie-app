@@ -4,6 +4,8 @@ import { media } from "server/db/schemas/system-schema";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { createMediaSchema } from "shared/src/schemas/media";
+import { S3 } from "server/lib/s3client";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 export const mediaRouter = new Hono()
   .get("/", async (c) => {
@@ -100,24 +102,46 @@ export const mediaRouter = new Hono()
       );
     }
   })
-  .delete("/:id", async (c) => {
+  .delete("/image/:key", async (c) => {
     try {
-      const id = c.req.param("id");
-      const deletedCount = await db
-        .delete(media)
-        .where(eq(media.id, id))
-        .returning();
+      const key = c.req.param("key");
 
-      if (deletedCount.length === 0) {
+      if (!key) {
+        return c.json({ error: "File key is required" }, { status: 400 });
+      }
+
+      const mediaToDelete = await db
+        .select()
+        .from(media)
+        .where(eq(media.key, key));
+
+      if (mediaToDelete.length === 0) {
         return c.json({ error: "Media not found" }, 404);
       }
 
-      return c.json({ message: "Media deleted successfully" }, 200);
+      try {
+        const command = new DeleteObjectCommand({
+          Bucket: process.env.S3_BUCKET_NAME,
+          Key: key,
+        });
+
+        await S3.send(command);
+
+        await db.delete(media).where(eq(media.key, key));
+
+        return c.json(
+          { message: "Image deleted successfully" },
+          { status: 200 }
+        );
+      } catch (error) {
+        console.error("Error deleting image:", error);
+        return c.json({ error: "Failed to delete image" }, { status: 500 });
+      }
     } catch (error) {
-      console.error("Error deleting media:", error);
+      console.error("Error deleting image:", error);
       return c.json(
         {
-          error: "Failed to delete media",
+          error: "Failed to delete image",
           details: error,
         },
         500

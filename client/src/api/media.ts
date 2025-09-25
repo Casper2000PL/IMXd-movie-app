@@ -1,4 +1,5 @@
 import { client } from "server/src/client";
+import { toast } from "sonner";
 
 interface createMediaProps {
   formData: {
@@ -65,16 +66,41 @@ export const getMediaByContentId = async (contentId: string) => {
     const response = await client.api.media.content[":contentId"].$get({
       param: { contentId },
     });
+
     console.log("Response from getMediaByContentId:", response);
+
     if (response.ok) {
       const data = await response.json();
+
+      if (data.length === 0) {
+        return [];
+      }
+
       return data;
     } else {
-      // TODO getMediaByContentId always returns error, empty media record in media table should be created along with the content
       return [];
     }
   } catch (error) {
     console.error("Error fetching media by content ID:", error);
     throw error;
+  }
+};
+
+export const deleteImageByKey = async (key: string) => {
+  try {
+    const response = await client.api.media.image[":key"].$delete({
+      param: { key },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      toast.success("Image deleted successfully");
+      return data;
+    } else {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Error deleting image:", error);
+    toast.error("Failed to delete image");
   }
 };

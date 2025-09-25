@@ -73,7 +73,7 @@ export const contentRouter = new Hono()
               field: "title",
             },
             409
-          ); // 409 Conflict
+          );
         }
       }
 
