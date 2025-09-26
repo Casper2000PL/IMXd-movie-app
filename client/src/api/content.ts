@@ -1,4 +1,7 @@
 import { client } from "server/src/client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useNavigate } from "@tanstack/react-router";
 
 export interface CreateContentForm {
   title: string;
@@ -30,9 +33,8 @@ export const getContent = async () => {
 
 export const getContentById = async (id: string) => {
   try {
-    // Use the correct endpoint structure for URL parameters
     const response = await client.api.content[":id"].$get({
-      param: { id }, // Pass as param object, not query
+      param: { id },
     });
 
     if (response.ok) {
@@ -101,9 +103,9 @@ export const updateContent = async (
     });
 
     if (response.ok) {
-      const createdContent = await response.json();
-      console.log("Content updated successfully:", createdContent);
-      return createdContent;
+      const updatedContent = await response.json();
+      console.log("Content updated successfully:", updatedContent);
+      return updatedContent;
     } else {
       const errorText = await response.text();
       console.error("Server error response:", errorText);
@@ -113,4 +115,55 @@ export const updateContent = async (
     console.error("Error updating content:", error);
     throw error;
   }
+};
+
+// TanStack Query Hooks
+export const useUpdateContent = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      formData,
+    }: {
+      id: string;
+      formData: CreateContentForm;
+    }) => updateContent(id, formData),
+    onSuccess: (variables) => {
+      toast.success("Content updated successfully!");
+
+      // Invalidate and refetch content queries
+      queryClient.invalidateQueries({ queryKey: ["content"] });
+      queryClient.invalidateQueries({ queryKey: ["content", variables.id] });
+    },
+    onError: (error) => {
+      console.error("Error updating content:", error);
+      toast.error("Failed to update content. Please try again.");
+    },
+  });
+};
+
+export const useCreateContent = () => {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  return useMutation({
+    mutationFn: createContent,
+    onSuccess: (data) => {
+      toast.success("Content created successfully!");
+
+      // Invalidate and refetch content queries
+      queryClient.invalidateQueries({ queryKey: ["content"] });
+
+      // Navigate to the content detail page
+      navigate({
+        to: `/content/${data.id}`,
+        params: { contentId: data.id },
+      });
+    },
+    onError: (error) => {
+      console.error("Error creating content:", error);
+      toast.error("Failed to create content. Please try again.");
+    },
+  });
 };

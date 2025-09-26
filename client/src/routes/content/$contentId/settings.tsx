@@ -1,10 +1,11 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { getContentById, updateContent } from "@/api/content";
+import { getContentById, useUpdateContent } from "@/api/content";
 import { s3FileDelete, s3FileUpload } from "@/api/file";
 import {
-  createMedia,
-  deleteImageByKey,
-  getMediaByContentId,
+  useCreateMedia,
+  useDeleteImageByKey,
+  useMediaByContentId,
 } from "@/api/media";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Loader, Trash2Icon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
@@ -36,17 +37,11 @@ import z from "zod";
 
 export const Route = createFileRoute("/content/$contentId/settings")({
   loader: async ({ params }) => {
-    const [contentData, mediaData] = await Promise.all([
-      getContentById(params.contentId),
-      getMediaByContentId(params.contentId),
-    ]);
-
+    const contentData = await getContentById(params.contentId);
     return {
       content: contentData,
-      media: mediaData,
     };
   },
-
   component: SettingsComponent,
 });
 
@@ -84,12 +79,34 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 function SettingsComponent() {
-  const navigate = useNavigate();
-  const { content, media } = Route.useLoaderData();
+  const { content } = Route.useLoaderData();
   const { contentId } = Route.useParams();
 
-  console.log("Content data:", content);
-  console.log("Media data:", media);
+  // All hooks must be called unconditionally at the top
+  const {
+    data: media = [],
+    isLoading: mediaLoading,
+    error: mediaError,
+  } = useMediaByContentId(contentId);
+  const deleteImageMutation = useDeleteImageByKey();
+  const createMediaMutation = useCreateMedia();
+  const updateContentMutation = useUpdateContent();
+
+  // Move formTextData hook to the top
+  const formTextData = useForm<z.infer<typeof formSchemaTextData>>({
+    resolver: zodResolver(formSchemaTextData),
+    defaultValues: {
+      title: content.title || "",
+      type: content.type || "",
+      description: content.description || "",
+      releaseDate: content.releaseDate || "",
+      runtime: String(content.runtime) || "",
+      language: content.language || "en",
+      status: content.status || "",
+      numberOfSeasons: String(content.numberOfSeasons) || "",
+      numberOfEpisodes: String(content.numberOfEpisodes) || "",
+    },
+  });
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -98,20 +115,6 @@ function SettingsComponent() {
       youtubeUrl: "",
     },
   });
-
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log(values);
-    createMedia({
-      contentId,
-      formData: {
-        title: values.title,
-        fileUrl: values.youtubeUrl,
-        fileSize: 0,
-      },
-      type: "video",
-      mediaCategory: "trailer",
-    });
-  };
 
   const [posters, setPosters] = useState<
     Array<{
@@ -138,6 +141,8 @@ function SettingsComponent() {
       objectUrl?: string;
     }>
   >([]);
+
+  const watchedType = formTextData.watch("type");
 
   // Enhanced uploadFile function with better error handling
   const uploadFile = useCallback(
@@ -238,50 +243,6 @@ function SettingsComponent() {
     },
     [content.title, content.id],
   );
-
-  // Enhanced removeFile function with better error handling
-  async function removeFile(fileId: string, isPoster: boolean = true) {
-    const setFiles = isPoster ? setPosters : setOtherImages;
-    const files = isPoster ? posters : otherImages;
-
-    try {
-      const fileToRemove = files.find((f) => f.id === fileId);
-
-      if (fileToRemove) {
-        if (fileToRemove.objectUrl) {
-          URL.revokeObjectURL(fileToRemove.objectUrl);
-        }
-      }
-
-      setFiles((prevFiles) =>
-        prevFiles.map((f) =>
-          f.id === fileId ? { ...f, isDeleting: true } : f,
-        ),
-      );
-
-      if (!fileToRemove?.key) {
-        throw new Error("File key is missing");
-      }
-
-      await s3FileDelete(fileToRemove.key);
-
-      toast.success("File removed successfully");
-      setFiles((prevFiles) => prevFiles.filter((f) => f.id !== fileId));
-    } catch (error) {
-      console.log("Error in removeFile:", error);
-
-      // The error message is now properly extracted from the API response
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error occurred";
-      toast.error(errorMessage);
-
-      setFiles((prevFiles) =>
-        prevFiles.map((f) =>
-          f.id === fileId ? { ...f, isDeleting: false, error: true } : f,
-        ),
-      );
-    }
-  }
 
   // First dropzone for posters
   const onDrop = useCallback(
@@ -384,7 +345,8 @@ function SettingsComponent() {
     [],
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  // Move useDropzone hooks to the top, before any conditional returns
+  const dropzone1 = useDropzone({
     onDrop,
     onDropRejected,
     maxFiles: 5,
@@ -394,11 +356,7 @@ function SettingsComponent() {
     },
   });
 
-  const {
-    getRootProps: getRootPropsOther,
-    getInputProps: getInputPropsOther,
-    isDragActive: isDragActiveOther,
-  } = useDropzone({
+  const dropzone2 = useDropzone({
     onDrop: onDropOtherImages,
     onDropRejected: onDropRejectedOtherImages,
     maxFiles: 10,
@@ -408,77 +366,105 @@ function SettingsComponent() {
     },
   });
 
-  console.log("Dropzone 1: ", getRootProps, getInputProps, isDragActive);
+  // Now conditional returns can happen after all hooks are called
+  if (mediaLoading) {
+    return (
+      <div className="flex min-h-[300px] w-full items-center justify-center">
+        <Loader className="size-8 animate-spin" />
+      </div>
+    );
+  }
 
-  console.log(
-    "Dropzone 2: ",
-    getRootPropsOther,
-    getInputPropsOther,
-    isDragActiveOther,
-  );
+  if (mediaError) {
+    return (
+      <div className="flex min-h-[300px] w-full items-center justify-center">
+        <p className="text-red-500">Failed to load media. Please try again.</p>
+      </div>
+    );
+  }
+
+  console.log("Content data:", content);
+  console.log("Media data:", media);
+
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    console.log(values);
+    createMediaMutation.mutate({
+      contentId,
+      formData: {
+        title: values.title,
+        fileUrl: values.youtubeUrl,
+        fileSize: 0,
+      },
+      type: "video",
+      mediaCategory: "trailer",
+    });
+  };
+
+  // Enhanced removeFile function with better error handling
+  async function removeFile(fileId: string, isPoster: boolean = true) {
+    const setFiles = isPoster ? setPosters : setOtherImages;
+    const files = isPoster ? posters : otherImages;
+
+    try {
+      const fileToRemove = files.find((f) => f.id === fileId);
+
+      if (fileToRemove) {
+        if (fileToRemove.objectUrl) {
+          URL.revokeObjectURL(fileToRemove.objectUrl);
+        }
+      }
+
+      setFiles((prevFiles) =>
+        prevFiles.map((f) =>
+          f.id === fileId ? { ...f, isDeleting: true } : f,
+        ),
+      );
+
+      if (!fileToRemove?.key) {
+        throw new Error("File key is missing");
+      }
+
+      await s3FileDelete(fileToRemove.key);
+
+      toast.success("File removed successfully");
+      setFiles((prevFiles) => prevFiles.filter((f) => f.id !== fileId));
+    } catch (error) {
+      console.log("Error in removeFile:", error);
+
+      // The error message is now properly extracted from the API response
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      toast.error(errorMessage);
+
+      setFiles((prevFiles) =>
+        prevFiles.map((f) =>
+          f.id === fileId ? { ...f, isDeleting: false, error: true } : f,
+        ),
+      );
+    }
+  }
+
+  // Handle delete with TanStack Query mutation
+  const handleDeleteImage = (key: string) => {
+    deleteImageMutation.mutate(key);
+  };
+
+  console.log("Dropzone 1: ", dropzone1);
+  console.log("Dropzone 2: ", dropzone2);
 
   const videos = media.filter((m) => m.type === "video");
   const postersImages = media.filter((m) => m.mediaCategory === "poster");
   const images = media.filter((m) => m.type === "image");
-
   const trailers = media.filter((m) => m.mediaCategory === "trailer");
-
   const galleryImages = media.filter(
     (m) => m.mediaCategory === "gallery_image",
   );
 
-  const formTextData = useForm<z.infer<typeof formSchemaTextData>>({
-    resolver: zodResolver(formSchemaTextData),
-    defaultValues: {
-      title: content.title || "",
-      type: content.type || "",
-      description: content.description || "",
-      releaseDate: content.releaseDate || "",
-      runtime: String(content.runtime) || "",
-      language: content.language || "en",
-      status: content.status || "",
-      numberOfSeasons: String(content.numberOfSeasons) || "",
-      numberOfEpisodes: String(content.numberOfEpisodes) || "",
-    },
-  });
-
-  const watchedType = formTextData.watch("type");
-
-  const onSubmitTextData = async (
-    values: z.infer<typeof formSchemaTextData>,
-  ) => {
-    try {
-      console.log("Values: ", values);
-      console.log("Values.title: ", values.title);
-
-      const formData = {
-        title: values.title,
-        type: values.type,
-        description: values.description,
-        releaseDate: values.releaseDate,
-        runtime: values.runtime,
-        language: values.language,
-        status: values.status,
-        numberOfSeasons: values.numberOfSeasons,
-        numberOfEpisodes: values.numberOfEpisodes,
-      };
-
-      // Create the content and get the response with the ID
-      const updatedContent = await updateContent(content.id, formData);
-      console.log("Updated content:", updatedContent);
-
-      // Show success message
-      toast.success("Content updated successfully!");
-
-      // Navigate to the content detail page with the ID
-      await navigate({
-        to: `/content/${content.id}`,
-        params: { contentId: content.id },
-      });
-    } catch (error) {
-      console.error("Error updating content:", error);
-      toast.error("Failed to update content. Please try again.");
-    }
+  const onSubmitTextData = (values: z.infer<typeof formSchemaTextData>) => {
+    updateContentMutation.mutate({
+      id: content.id,
+      formData: values,
+    });
   };
 
   return (
@@ -505,34 +491,6 @@ function SettingsComponent() {
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Content Type */}
-                <FormField
-                  control={formTextData.control}
-                  name="type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-white">
-                        Content Type *
-                      </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="bg-white text-black">
-                            <SelectValue placeholder="Select content type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="movie">Movie</SelectItem>
-                          <SelectItem value="show">TV Show</SelectItem>
-                        </SelectContent>
-                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -655,21 +613,57 @@ function SettingsComponent() {
                   </div>
                 )}
 
-                {/* Row: Language, Status */}
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {/* Row: Content, Language, Status */}
+                <div className="xs:flex-row flex flex-col gap-5">
+                  <FormField
+                    control={formTextData.control}
+                    name="type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">
+                          Content Type *
+                        </FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="bg-white text-black">
+                              <SelectValue placeholder="Select content type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="movie">Movie</SelectItem>
+                            <SelectItem value="show">TV Show</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <FormField
                     control={formTextData.control}
                     name="language"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-white">Language</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="en"
-                            {...field}
-                            className="bg-white text-black"
-                          />
-                        </FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="bg-white text-black">
+                              <SelectValue placeholder="Select language" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="en">English</SelectItem>
+                            <SelectItem value="es">Spanish</SelectItem>
+                            <SelectItem value="fr">French</SelectItem>
+                            <SelectItem value="de">German</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -711,9 +705,9 @@ function SettingsComponent() {
                   <Button
                     type="submit"
                     className="bg-custom-yellow-100 hover:bg-custom-yellow-300 w-full max-w-md px-8 py-5 font-semibold text-black"
-                    disabled={formTextData.formState.isSubmitting}
+                    disabled={updateContentMutation.isPending}
                   >
-                    {formTextData.formState.isSubmitting ? (
+                    {updateContentMutation.isPending ? (
                       <Loader className="size-4 animate-spin" />
                     ) : (
                       "Edit"
@@ -726,10 +720,15 @@ function SettingsComponent() {
         </div>
       </div>
       <div className="bg-custom-yellow-300 min-h-[300px] w-full">
-        <div className="mx-auto max-w-7xl py-10">
+        <div className="mx-auto max-w-7xl px-5 py-10">
           <h1 className="font-roboto mb-10 text-center text-4xl font-extrabold text-black">
             Posters
           </h1>
+          {postersImages.length === 0 && (
+            <p className="text-center font-medium text-gray-500">
+              No posters available
+            </p>
+          )}
           <div className="grid grid-cols-[repeat(auto-fit,200px)] place-content-center items-end justify-start gap-10">
             {postersImages.map((m) => (
               <div key={m.id} className="flex flex-col items-center gap-2">
@@ -740,10 +739,15 @@ function SettingsComponent() {
                     className="w-[200px] rounded-md object-cover"
                   />
                   <button
-                    className="absolute top-2 right-2 cursor-pointer rounded-md bg-red-500 p-2 transition-all duration-200 hover:bg-red-700"
-                    onClick={async () => await deleteImageByKey(m.key!)}
+                    className="absolute top-2 right-2 cursor-pointer rounded-md bg-red-500 p-2 transition-all duration-200 hover:bg-red-700 disabled:opacity-50"
+                    onClick={() => handleDeleteImage(m.key!)}
+                    disabled={deleteImageMutation.isPending}
                   >
-                    <Trash2Icon className="size-5 text-white" />
+                    {deleteImageMutation.isPending ? (
+                      <Loader className="size-5 animate-spin text-white" />
+                    ) : (
+                      <Trash2Icon className="size-5 text-white" />
+                    )}
                   </button>
                 </div>
                 <div className="w-[200px] truncate text-center text-base font-semibold text-black">
@@ -755,6 +759,11 @@ function SettingsComponent() {
           <h1 className="font-roboto my-10 text-center text-4xl font-extrabold text-black">
             Gallery Images
           </h1>
+          {galleryImages.length === 0 && (
+            <p className="text-center font-medium text-gray-500">
+              No gallery images available
+            </p>
+          )}
           <div className="grid grid-cols-[repeat(auto-fit,200px)] place-content-center items-end justify-start gap-10">
             {galleryImages.map((m) => (
               <div key={m.id} className="flex flex-col items-center gap-2">
@@ -765,10 +774,15 @@ function SettingsComponent() {
                     className="w-[200px] rounded-md object-cover"
                   />
                   <button
-                    className="absolute top-2 right-2 cursor-pointer rounded-md bg-red-500 p-2 transition-all duration-200 hover:bg-red-700"
-                    onClick={async () => await deleteImageByKey(m.key!)}
+                    className="absolute top-2 right-2 cursor-pointer rounded-md bg-red-500 p-2 transition-all duration-200 hover:bg-red-700 disabled:opacity-50"
+                    onClick={() => handleDeleteImage(m.key!)}
+                    disabled={deleteImageMutation.isPending}
                   >
-                    <Trash2Icon className="size-5 text-white" />
+                    {deleteImageMutation.isPending ? (
+                      <Loader className="size-5 animate-spin text-white" />
+                    ) : (
+                      <Trash2Icon className="size-5 text-white" />
+                    )}
                   </button>
                 </div>
                 <div className="w-[200px] truncate text-center text-base font-semibold text-black">

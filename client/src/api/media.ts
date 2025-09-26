@@ -1,3 +1,4 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { client } from "server/src/client";
 import { toast } from "sonner";
 
@@ -17,6 +18,7 @@ interface createMediaProps {
     | "profile_image";
 }
 
+// Original API functions
 export const createMedia = async ({
   contentId,
   formData,
@@ -66,16 +68,12 @@ export const getMediaByContentId = async (contentId: string) => {
     const response = await client.api.media.content[":contentId"].$get({
       param: { contentId },
     });
-
     console.log("Response from getMediaByContentId:", response);
-
     if (response.ok) {
       const data = await response.json();
-
       if (data.length === 0) {
         return [];
       }
-
       return data;
     } else {
       return [];
@@ -91,16 +89,55 @@ export const deleteImageByKey = async (key: string) => {
     const response = await client.api.media.image[":key"].$delete({
       param: { key },
     });
-
     if (response.ok) {
       const data = await response.json();
-      toast.success("Image deleted successfully");
       return data;
     } else {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
   } catch (error) {
     console.error("Error deleting image:", error);
-    toast.error("Failed to delete image");
+    throw error;
   }
+};
+
+// TanStack Query Hooks
+export const useMediaByContentId = (contentId: string) => {
+  return useQuery({
+    queryKey: ["media", "content", contentId],
+    queryFn: () => getMediaByContentId(contentId),
+    enabled: !!contentId,
+  });
+};
+
+export const useDeleteImageByKey = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteImageByKey,
+    onSuccess: () => {
+      toast.success("Image deleted successfully");
+      // Invalidate all media queries to refetch
+      queryClient.invalidateQueries({ queryKey: ["media"] });
+    },
+    onError: () => {
+      toast.error("Failed to delete image");
+    },
+  });
+};
+
+export const useCreateMedia = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createMedia,
+    onSuccess: () => {
+      toast.success("Media created successfully");
+      // Invalidate all media queries to refetch
+      queryClient.invalidateQueries({ queryKey: ["media"] });
+    },
+    onError: () => {
+      toast.error("Failed to create media");
+    },
+  });
 };
