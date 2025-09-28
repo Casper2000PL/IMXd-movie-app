@@ -1,12 +1,6 @@
-/* eslint-disable react-hooks/rules-of-hooks */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { getContentById, useUpdateContent } from "@/api/content";
-import { s3FileDelete, s3FileUpload } from "@/api/file";
-import {
-  useCreateMedia,
-  useDeleteImageByKey,
-  useMediaByContentId,
-} from "@/api/media";
+import { s3FileUpload } from "@/api/file";
+import { useDeleteImageByKey, useMediaByContentId } from "@/api/media";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -25,14 +19,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Loader, Trash2Icon } from "lucide-react";
+import { CameraIcon, ImagesIcon, Loader, Trash2Icon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { v4 as uuidv4 } from "uuid";
 import z from "zod";
 
 export const Route = createFileRoute("/content/$contentId/settings")({
@@ -71,28 +66,30 @@ const formSchemaTextData = z.object({
   numberOfEpisodes: z.string().optional(),
 });
 
-const formSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  youtubeUrl: z.url("Invalid URL").min(1, "YouTube URL is required"),
-});
+// const formSchema = z.object({
+//   title: z.string().min(1, "Title is required"),
+//   youtubeUrl: z.url("Invalid URL").min(1, "YouTube URL is required"),
+// });
 
-type FormData = z.infer<typeof formSchema>;
+// type FormData = z.infer<typeof formSchema>;
 
 function SettingsComponent() {
   const { content } = Route.useLoaderData();
   const { contentId } = Route.useParams();
 
-  // All hooks must be called unconditionally at the top
+  const [deletingKey, setDeletingKey] = useState<string | null>(null);
+
+  const queryClient = useQueryClient();
+
+  // All other existing hooks remain the same...
   const {
     data: media = [],
     isLoading: mediaLoading,
     error: mediaError,
   } = useMediaByContentId(contentId);
-  const deleteImageMutation = useDeleteImageByKey();
-  const createMediaMutation = useCreateMedia();
+  const { mutate: deleteImage } = useDeleteImageByKey();
   const updateContentMutation = useUpdateContent();
 
-  // Move formTextData hook to the top
   const formTextData = useForm<z.infer<typeof formSchemaTextData>>({
     resolver: zodResolver(formSchemaTextData),
     defaultValues: {
@@ -108,54 +105,15 @@ function SettingsComponent() {
     },
   });
 
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      youtubeUrl: "",
-    },
-  });
-
-  const [posters, setPosters] = useState<
-    Array<{
-      id: string;
-      file: File;
-      uploading: boolean;
-      progress: number;
-      key?: string;
-      isDeleting: boolean;
-      error: boolean;
-      objectUrl?: string;
-    }>
-  >([]);
-
-  const [otherImages, setOtherImages] = useState<
-    Array<{
-      id: string;
-      file: File;
-      uploading: boolean;
-      progress: number;
-      key?: string;
-      isDeleting: boolean;
-      error: boolean;
-      objectUrl?: string;
-    }>
-  >([]);
-
   const watchedType = formTextData.watch("type");
 
-  // Enhanced uploadFile function with better error handling
+  // Simplified uploadFile function - no state management needed
   const uploadFile = useCallback(
     async (file: File, isPoster: boolean = true) => {
-      const setFiles = isPoster ? setPosters : setOtherImages;
-
-      setFiles((prevFiles) =>
-        prevFiles.map((f) =>
-          f.file === file ? { ...f, uploading: true, progress: 0 } : f,
-        ),
-      );
-
       try {
+        // Show upload start toast
+        toast.loading(`Uploading ${file.name}...`, { id: file.name });
+
         // Get presigned URL from your API
         const presignedUrlResponse = await s3FileUpload({
           file,
@@ -165,7 +123,7 @@ function SettingsComponent() {
           type: "image",
         });
 
-        const { presignedUrl, key } = await presignedUrlResponse.json();
+        const { presignedUrl } = await presignedUrlResponse.json();
 
         // Upload to S3 using the presigned URL
         await new Promise<void>((resolve, reject) => {
@@ -176,32 +134,27 @@ function SettingsComponent() {
               const percentageCompleted = Math.round(
                 (event.loaded / event.total) * 100,
               );
-              setFiles((prevFiles) =>
-                prevFiles.map((p) =>
-                  p.file === file
-                    ? { ...p, progress: percentageCompleted, key }
-                    : p,
-                ),
+              // Update the loading toast with progress
+              toast.loading(
+                `Uploading ${file.name}... ${percentageCompleted}%`,
+                {
+                  id: file.name,
+                },
               );
             }
           };
 
           xhr.onload = () => {
             if (xhr.status >= 200 && xhr.status < 300) {
-              setFiles((prevFiles) =>
-                prevFiles.map((p) =>
-                  p.file === file
-                    ? {
-                        ...p,
-                        uploading: false,
-                        progress: 100,
-                        error: false,
-                        key,
-                      }
-                    : p,
-                ),
-              );
-              toast.success("File uploaded successfully");
+              // Dismiss loading toast and show success
+              toast.dismiss(file.name);
+              toast.success(`${file.name} uploaded successfully`);
+
+              // Invalidate media queries to refetch the data
+              queryClient.invalidateQueries({
+                queryKey: ["media", "content", contentId],
+              });
+
               resolve();
             } else {
               console.error(
@@ -227,43 +180,22 @@ function SettingsComponent() {
       } catch (error) {
         console.error("Upload error:", error);
 
-        // The error message is now properly extracted from the API response
+        // Dismiss loading toast and show error
+        toast.dismiss(file.name);
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error occurred";
-        toast.error(errorMessage);
-
-        setFiles((prevFiles) =>
-          prevFiles.map((p) =>
-            p.file === file
-              ? { ...p, uploading: false, progress: 0, error: true }
-              : p,
-          ),
-        );
+        toast.error(`Failed to upload ${file.name}: ${errorMessage}`);
       }
     },
-    [content.title, content.id],
+    [content.title, content.id, contentId, queryClient],
   );
 
-  // First dropzone for posters
+  // Simplified dropzone handlers - no state management
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       console.log("Accepted poster files:", acceptedFiles);
 
-      if (acceptedFiles.length > 0) {
-        setPosters((prevPosters) => [
-          ...prevPosters,
-          ...acceptedFiles.map((file) => ({
-            id: uuidv4(),
-            file,
-            uploading: false,
-            progress: 0,
-            isDeleting: false,
-            error: false,
-            objectUrl: URL.createObjectURL(file),
-          })),
-        ]);
-      }
-
+      // Just upload each file - no state tracking needed
       acceptedFiles.forEach((file) => {
         uploadFile(file, true);
       });
@@ -286,33 +218,19 @@ function SettingsComponent() {
       }
 
       if (fileTooLarge) {
-        toast.error("Each file must be less than 5MB.");
+        toast.error("Each file must be less than 25MB.");
       }
     }
 
     console.log("Rejected poster files:", fileRejections);
   }, []);
 
-  // Second dropzone handlers for other images
+  // Simplified other images dropzone handlers
   const onDropOtherImages = useCallback(
     (acceptedFiles: File[]) => {
       console.log("Accepted other image files:", acceptedFiles);
 
-      if (acceptedFiles.length > 0) {
-        setOtherImages((prevImages) => [
-          ...prevImages,
-          ...acceptedFiles.map((file) => ({
-            id: uuidv4(),
-            file,
-            uploading: false,
-            progress: 0,
-            isDeleting: false,
-            error: false,
-            objectUrl: URL.createObjectURL(file),
-          })),
-        ]);
-      }
-
+      // Just upload each file - no state tracking needed
       acceptedFiles.forEach((file) => {
         uploadFile(file, false);
       });
@@ -345,18 +263,22 @@ function SettingsComponent() {
     [],
   );
 
-  // Move useDropzone hooks to the top, before any conditional returns
-  const dropzone1 = useDropzone({
+  // Rest of your dropzone configuration remains the same
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     onDropRejected,
     maxFiles: 5,
-    maxSize: 5 * 1024 * 1024, // 5MB
+    maxSize: 25 * 1024 * 1024, // 25MB
     accept: {
       "image/*": [],
     },
   });
 
-  const dropzone2 = useDropzone({
+  const {
+    getRootProps: getRootPropsOther,
+    getInputProps: getInputPropsOther,
+    isDragActive: isDragActiveOther,
+  } = useDropzone({
     onDrop: onDropOtherImages,
     onDropRejected: onDropRejectedOtherImages,
     maxFiles: 10,
@@ -386,76 +308,37 @@ function SettingsComponent() {
   console.log("Content data:", content);
   console.log("Media data:", media);
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log(values);
-    createMediaMutation.mutate({
-      contentId,
-      formData: {
-        title: values.title,
-        fileUrl: values.youtubeUrl,
-        fileSize: 0,
-      },
-      type: "video",
-      mediaCategory: "trailer",
-    });
-  };
-
-  // Enhanced removeFile function with better error handling
-  async function removeFile(fileId: string, isPoster: boolean = true) {
-    const setFiles = isPoster ? setPosters : setOtherImages;
-    const files = isPoster ? posters : otherImages;
-
-    try {
-      const fileToRemove = files.find((f) => f.id === fileId);
-
-      if (fileToRemove) {
-        if (fileToRemove.objectUrl) {
-          URL.revokeObjectURL(fileToRemove.objectUrl);
-        }
-      }
-
-      setFiles((prevFiles) =>
-        prevFiles.map((f) =>
-          f.id === fileId ? { ...f, isDeleting: true } : f,
-        ),
-      );
-
-      if (!fileToRemove?.key) {
-        throw new Error("File key is missing");
-      }
-
-      await s3FileDelete(fileToRemove.key);
-
-      toast.success("File removed successfully");
-      setFiles((prevFiles) => prevFiles.filter((f) => f.id !== fileId));
-    } catch (error) {
-      console.log("Error in removeFile:", error);
-
-      // The error message is now properly extracted from the API response
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error occurred";
-      toast.error(errorMessage);
-
-      setFiles((prevFiles) =>
-        prevFiles.map((f) =>
-          f.id === fileId ? { ...f, isDeleting: false, error: true } : f,
-        ),
-      );
-    }
-  }
+  // const onSubmit = (values: z.infer<typeof formSchema>) => {
+  //   console.log(values);
+  //   createMediaMutation.mutate({
+  //     contentId,
+  //     formData: {
+  //       title: values.title,
+  //       fileUrl: values.youtubeUrl,
+  //       fileSize: 0,
+  //     },
+  //     type: "video",
+  //     mediaCategory: "trailer",
+  //   });
+  // };
 
   // Handle delete with TanStack Query mutation
   const handleDeleteImage = (key: string) => {
-    deleteImageMutation.mutate(key);
+    setDeletingKey(key); // Set the key that's being deleted
+    deleteImage(key, {
+      onSuccess: () => {
+        setDeletingKey(null); // Clear the deleting key on success
+      },
+      onError: () => {
+        setDeletingKey(null); // Clear the deleting key on error
+      },
+    });
   };
 
-  console.log("Dropzone 1: ", dropzone1);
-  console.log("Dropzone 2: ", dropzone2);
-
-  const videos = media.filter((m) => m.type === "video");
+  //const videos = media.filter((m) => m.type === "video");
   const postersImages = media.filter((m) => m.mediaCategory === "poster");
-  const images = media.filter((m) => m.type === "image");
-  const trailers = media.filter((m) => m.mediaCategory === "trailer");
+  //const images = media.filter((m) => m.type === "image");
+  //const trailers = media.filter((m) => m.mediaCategory === "trailer");
   const galleryImages = media.filter(
     (m) => m.mediaCategory === "gallery_image",
   );
@@ -719,6 +602,7 @@ function SettingsComponent() {
           </div>
         </div>
       </div>
+      {/* Images section */}
       <div className="bg-custom-yellow-300 min-h-[300px] w-full">
         <div className="mx-auto max-w-7xl px-5 py-10">
           <h1 className="font-roboto mb-10 text-center text-4xl font-extrabold text-black">
@@ -741,9 +625,9 @@ function SettingsComponent() {
                   <button
                     className="absolute top-2 right-2 cursor-pointer rounded-md bg-red-500 p-2 transition-all duration-200 hover:bg-red-700 disabled:opacity-50"
                     onClick={() => handleDeleteImage(m.key!)}
-                    disabled={deleteImageMutation.isPending}
+                    disabled={deletingKey === m.key} // Check if THIS specific image is being deleted
                   >
-                    {deleteImageMutation.isPending ? (
+                    {deletingKey === m.key ? ( // Show loader only for the image being deleted
                       <Loader className="size-5 animate-spin text-white" />
                     ) : (
                       <Trash2Icon className="size-5 text-white" />
@@ -756,6 +640,37 @@ function SettingsComponent() {
               </div>
             ))}
           </div>
+          {/* First Dropzone - Posters */}
+          <div className="mt-10">
+            <div
+              className={cn(
+                isDragActive
+                  ? "border-solid bg-black/40"
+                  : "border-dashed bg-black/50",
+                "group border-custom-yellow-300 w-full cursor-pointer rounded-xl border-2 py-10 transition duration-200 hover:bg-black/40",
+              )}
+              {...getRootProps()}
+            >
+              <input {...getInputProps()} />
+              <div className="flex w-full flex-col items-center justify-center">
+                <ImagesIcon
+                  className={cn(
+                    isDragActive ? "text-amber-200" : "text-custom-yellow-100",
+                    "size-8 duration-100 group-hover:text-amber-200",
+                  )}
+                />
+                <div className="mt-4 text-center">
+                  <p className="mb-0.5 text-sm font-medium text-white">
+                    Click or drag poster images to upload
+                  </p>
+                  <p className="text-xs text-stone-400">
+                    PNG, JPG up to 5MB (max 5 files)
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* First Dropzone - Posters END */}
           <h1 className="font-roboto my-10 text-center text-4xl font-extrabold text-black">
             Gallery Images
           </h1>
@@ -776,9 +691,9 @@ function SettingsComponent() {
                   <button
                     className="absolute top-2 right-2 cursor-pointer rounded-md bg-red-500 p-2 transition-all duration-200 hover:bg-red-700 disabled:opacity-50"
                     onClick={() => handleDeleteImage(m.key!)}
-                    disabled={deleteImageMutation.isPending}
+                    disabled={deletingKey === m.key} // Check if THIS specific image is being deleted
                   >
-                    {deleteImageMutation.isPending ? (
+                    {deletingKey === m.key ? ( // Show loader only for the image being deleted
                       <Loader className="size-5 animate-spin text-white" />
                     ) : (
                       <Trash2Icon className="size-5 text-white" />
@@ -790,6 +705,36 @@ function SettingsComponent() {
                 </div>
               </div>
             ))}
+          </div>
+          {/* Second Dropzone - Other Images */}
+          <div className="mt-10">
+            <div
+              className={cn(
+                isDragActiveOther
+                  ? "border-solid bg-blue-500/60"
+                  : "border-dashed bg-blue-700/70",
+                "group w-full cursor-pointer rounded-xl border-2 border-blue-400 py-10 transition duration-200 hover:bg-blue-800/60",
+              )}
+              {...getRootPropsOther()}
+            >
+              <input {...getInputPropsOther()} />
+              <div className="flex w-full flex-col items-center justify-center">
+                <CameraIcon
+                  className={cn(
+                    isDragActiveOther ? "text-blue-200" : "text-blue-400",
+                    "size-8 duration-100 group-hover:text-blue-200",
+                  )}
+                />
+                <div className="mt-4 text-center">
+                  <p className="mb-0.5 text-sm font-medium text-white">
+                    Click or drag other images to upload
+                  </p>
+                  <p className="text-xs text-stone-400">
+                    PNG, JPG up to 25MB (max 10 files)
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

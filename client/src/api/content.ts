@@ -1,7 +1,6 @@
-import { client } from "server/src/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { client } from "server/src/client";
 import { toast } from "sonner";
-import { useNavigate } from "@tanstack/react-router";
 
 export interface CreateContentForm {
   title: string;
@@ -139,31 +138,6 @@ export const useUpdateContent = () => {
     onError: (error) => {
       console.error("Error updating content:", error);
       toast.error("Failed to update content. Please try again.");
-    },
-  });
-};
-
-export const useCreateContent = () => {
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-
-  return useMutation({
-    mutationFn: createContent,
-    onSuccess: (data) => {
-      toast.success("Content created successfully!");
-
-      // Invalidate and refetch content queries
-      queryClient.invalidateQueries({ queryKey: ["content"] });
-
-      // Navigate to the content detail page
-      navigate({
-        to: `/content/${data.id}`,
-        params: { contentId: data.id },
-      });
-    },
-    onError: (error) => {
-      console.error("Error creating content:", error);
-      toast.error("Failed to create content. Please try again.");
     },
   });
 };
