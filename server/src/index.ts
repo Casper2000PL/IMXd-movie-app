@@ -10,15 +10,9 @@ import { mediaRouter } from "server/src/routes/media";
 import { fileRouter } from "server/src/routes/file";
 import { userRouter } from "server/src/routes/user";
 import { db } from "server/db";
+import { peopleRouter } from "./routes/people";
 
-export const app = new Hono<{ Variables: AuthType }>()
-  .get("/user-info", authMiddleware, (c) => {
-    return c.json({ message: "User info!" });
-  })
-  .get("/content", async (c) => {
-    const contentData = await db.select().from(content);
-    return c.json(contentData);
-  });
+export const app = new Hono<{ Variables: AuthType }>();
 
 // Add CORS middleware FIRST - before other middleware
 app.use(
@@ -64,7 +58,15 @@ const routes = app
   .route("/content", contentRouter)
   .route("/media", mediaRouter)
   .route("/file", fileRouter)
-  .route("/user", userRouter);
+  .route("/user", userRouter)
+  .route("/people", peopleRouter)
+  .get("/user-info", authMiddleware, (c) => {
+    return c.json({ message: "User info!" });
+  })
+  .get("/content", async (c) => {
+    const contentData = await db.select().from(content);
+    return c.json(contentData);
+  });
 
 // Export the type after all routes are defined
 export type AppType = typeof routes;

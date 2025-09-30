@@ -141,3 +141,13 @@ export const useCreateMedia = () => {
     },
   });
 };
+
+export const getUserInfo = async () => {
+  const response = await client.api["user-info"].$get();
+  if (response.ok) {
+    const data = await response.json();
+    return data;
+  } else {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+};

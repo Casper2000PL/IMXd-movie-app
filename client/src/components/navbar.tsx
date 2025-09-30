@@ -4,13 +4,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import NavButton from "./nav-button";
-import { ChevronDownIcon, CircleUserRoundIcon } from "lucide-react";
-import { Link } from "@tanstack/react-router";
 import { authClient } from "@/lib/auth-client";
-import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { Link } from "@tanstack/react-router";
+import { ChevronDownIcon, CircleUserRoundIcon } from "lucide-react";
+import { useState } from "react";
 import { User } from "shared/src/types";
+import NavButton from "./nav-button";
 
 const Navbar = () => {
   const { data: session } = authClient.useSession();
@@ -90,6 +90,11 @@ const Navbar = () => {
               {user.role === "ADMIN" && (
                 <DropdownMenuItem className="bg-red-500/25 py-2.5 pl-4 text-base hover:bg-red-500/50! hover:text-white!">
                   <Link to="/add-content">Add Content</Link>
+                </DropdownMenuItem>
+              )}
+              {user.role === "ADMIN" && (
+                <DropdownMenuItem className="bg-red-500/25 py-2.5 pl-4 text-base hover:bg-red-500/50! hover:text-white!">
+                  <Link to="/add-people">Add People</Link>
                 </DropdownMenuItem>
               )}
 

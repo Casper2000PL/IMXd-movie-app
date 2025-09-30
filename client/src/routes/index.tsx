@@ -1,5 +1,6 @@
 import { getContent } from "@/api/content";
 import { getMedia } from "@/api/media";
+import { getPeople } from "@/api/people";
 import PosterCard from "@/components/poster-card";
 import CarouselSection from "@/components/sections/CarouselSection";
 import CelebritiesSection from "@/components/sections/CelebritiesSection";
@@ -8,24 +9,27 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
-    const [contentData, mediaData] = await Promise.all([
+    const [contentData, mediaData, peopleData] = await Promise.all([
       getContent(),
       getMedia(),
+      getPeople(),
     ]);
 
     return {
       content: contentData,
       media: mediaData,
+      people: peopleData,
     };
   },
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { content, media } = Route.useLoaderData();
+  const { content, media, people } = Route.useLoaderData();
 
   console.log("Content data:", content);
   console.log("Media data:", media);
+  console.log("People data:", people);
 
   const posters = media.filter((item) => item.mediaCategory === "poster");
 
@@ -43,7 +47,7 @@ function RouteComponent() {
         />
 
         {/* Most Popular Celebrities Section */}
-        <CelebritiesSection />
+        {people && people.length > 0 && <CelebritiesSection people={people} />}
 
         <div className="mb-20 flex w-full gap-10">
           {posters.length > 0 &&

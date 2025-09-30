@@ -63,6 +63,36 @@ export const s3FileUpload = async ({
   return response;
 };
 
+export const uploadPersonImage = async (file: File): Promise<Response> => {
+  console.log("File details: ", file.name, file.size, file.type);
+
+  const response = await client.api.file["upload-person-image"].$post({
+    json: {
+      fileName: file.name,
+      contentType: file.type,
+      size: file.size,
+    },
+  });
+
+  if (!response.ok) {
+    console.log("Failed to upload person image: ", response);
+    let errorMessage = `Failed to upload person image: ${response.statusText}`;
+
+    try {
+      const errorData: ApiErrorResponse = await response.json();
+      if (errorData.error) {
+        errorMessage = extractErrorMessage(errorData.error);
+      }
+    } catch (parseError) {
+      console.log("Could not parse error response:", parseError);
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return response;
+};
+
 export const uploadProfileImage = async (
   userId: string,
   file: File,
