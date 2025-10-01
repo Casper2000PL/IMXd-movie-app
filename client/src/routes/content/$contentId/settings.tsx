@@ -1,3 +1,4 @@
+import { useGetCrew } from "@/api/cast-crew";
 import { getContentById, useUpdateContent } from "@/api/content";
 import { s3FileUpload } from "@/api/file";
 import { useDeleteImageByKey, useMediaByContentId } from "@/api/media";
@@ -66,6 +67,13 @@ const formSchemaTextData = z.object({
   numberOfEpisodes: z.string().optional(),
 });
 
+const formCrewSchema = z.object({
+  name: z.string().min(1, { message: "Name is required." }),
+  role: z.string().min(1),
+  character_name: z.string().optional(),
+  credit_order: z.number(),
+});
+
 // const formSchema = z.object({
 //   title: z.string().min(1, "Title is required"),
 //   youtubeUrl: z.url("Invalid URL").min(1, "YouTube URL is required"),
@@ -87,6 +95,15 @@ function SettingsComponent() {
     isLoading: mediaLoading,
     error: mediaError,
   } = useMediaByContentId(contentId);
+  const {
+    data: crew = [],
+    isLoading: crewLoading,
+    error: crewError,
+  } = useGetCrew();
+
+  console.log("Crew data:", crew);
+  console.log("Crew loading:", crewLoading);
+  console.log("Crew error:", crewError);
   const { mutate: deleteImage } = useDeleteImageByKey();
   const updateContentMutation = useUpdateContent();
 
@@ -105,7 +122,17 @@ function SettingsComponent() {
     },
   });
 
+  const formCrew = useForm<z.infer<typeof formCrewSchema>>({
+    resolver: zodResolver(formCrewSchema),
+    defaultValues: {
+      role: "",
+      character_name: "",
+      credit_order: 0,
+    },
+  });
+
   const watchedType = formTextData.watch("type");
+  const role = formCrew.watch("role");
 
   // Simplified uploadFile function - no state management needed
   const uploadFile = useCallback(
@@ -335,10 +362,7 @@ function SettingsComponent() {
     });
   };
 
-  //const videos = media.filter((m) => m.type === "video");
   const postersImages = media.filter((m) => m.mediaCategory === "poster");
-  //const images = media.filter((m) => m.type === "image");
-  //const trailers = media.filter((m) => m.mediaCategory === "trailer");
   const galleryImages = media.filter(
     (m) => m.mediaCategory === "gallery_image",
   );
@@ -587,7 +611,7 @@ function SettingsComponent() {
                 <div className="flex justify-center pt-6">
                   <Button
                     type="submit"
-                    className="bg-custom-yellow-100 hover:bg-custom-yellow-300 w-full max-w-md px-8 py-5 font-semibold text-black"
+                    className="bg-custom-yellow-100 hover:bg-custom-yellow-300 w-full px-8 py-5 font-semibold text-black"
                     disabled={updateContentMutation.isPending}
                   >
                     {updateContentMutation.isPending ? (
@@ -603,7 +627,7 @@ function SettingsComponent() {
         </div>
       </div>
       {/* Images section */}
-      <div className="bg-custom-yellow-300 min-h-[300px] w-full">
+      <div className="bg-custom-yellow-300 w-full">
         <div className="mx-auto max-w-7xl px-5 py-10">
           <h1 className="font-roboto mb-10 text-center text-4xl font-extrabold text-black">
             Posters
@@ -664,7 +688,7 @@ function SettingsComponent() {
                     Click or drag poster images to upload
                   </p>
                   <p className="text-xs text-stone-400">
-                    PNG, JPG up to 5MB (max 5 files)
+                    PNG, JPG up to 25MB (max 5 files)
                   </p>
                 </div>
               </div>
@@ -735,6 +759,104 @@ function SettingsComponent() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+      <div className="min-h-[150px] w-full bg-gray-800">
+        <div className="mx-auto max-w-7xl px-5 py-10">
+          <div className="w-full">
+            {/* Form Section */}
+            <Form {...formCrew}>
+              <form
+                //onSubmit={formCrew.handleSubmit()}
+                className="flex flex-col gap-2 border-2 border-white md:flex-row"
+              >
+                <FormField
+                  control={formCrew.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          placeholder="Enter name"
+                          {...field}
+                          className="w-50 bg-white text-black"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={formCrew.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="bg-white text-black">
+                            <SelectValue placeholder="Select role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="producer">Producer</SelectItem>
+                          <SelectItem value="actor">Actor</SelectItem>
+                          <SelectItem value="director">Director</SelectItem>
+                          <SelectItem value="writer">Writer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {role === "actor" && (
+                  <FormField
+                    control={formCrew.control}
+                    name="character_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input
+                            placeholder="Enter character name"
+                            {...field}
+                            className="w-50 bg-white text-black"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {/* i need digit field for credit order */}
+                <FormField
+                  control={formCrew.control}
+                  name="credit_order"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="Enter credit order (digit)"
+                          {...field}
+                          className="w-16 bg-white text-black"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="submit"
+                  className="bg-custom-yellow-100 hover:bg-custom-yellow-300 px-6 font-semibold text-black"
+                >
+                  Add
+                </Button>
+              </form>
+            </Form>
           </div>
         </div>
       </div>

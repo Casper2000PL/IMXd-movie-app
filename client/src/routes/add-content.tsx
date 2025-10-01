@@ -302,7 +302,7 @@ function RouteComponent() {
             <div className="flex justify-center pt-6">
               <Button
                 type="submit"
-                className="bg-custom-yellow-100 hover:bg-custom-yellow-300 w-full max-w-md px-8 py-5 font-semibold text-black"
+                className="bg-custom-yellow-100 hover:bg-custom-yellow-300 w-full px-8 py-5 font-semibold text-black"
                 disabled={form.formState.isSubmitting}
               >
                 {form.formState.isSubmitting ? (

@@ -11,6 +11,7 @@ import { fileRouter } from "server/src/routes/file";
 import { userRouter } from "server/src/routes/user";
 import { db } from "server/db";
 import { peopleRouter } from "./routes/people";
+import { castCrewRouter } from "./routes/cast-crew";
 
 export const app = new Hono<{ Variables: AuthType }>();
 
@@ -60,6 +61,7 @@ const routes = app
   .route("/file", fileRouter)
   .route("/user", userRouter)
   .route("/people", peopleRouter)
+  .route("/castCrew", castCrewRouter)
   .get("/user-info", authMiddleware, (c) => {
     return c.json({ message: "User info!" });
   })
