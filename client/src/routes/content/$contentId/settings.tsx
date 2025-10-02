@@ -1,7 +1,8 @@
-import { useGetCrew } from "@/api/cast-crew";
+import { useGetCrew, useCreateCastCrew } from "@/api/cast-crew";
 import { getContentById, useUpdateContent } from "@/api/content";
 import { s3FileUpload } from "@/api/file";
 import { useDeleteImageByKey, useMediaByContentId } from "@/api/media";
+import { useGetAllPeople } from "@/api/people";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -67,19 +68,13 @@ const formSchemaTextData = z.object({
   numberOfEpisodes: z.string().optional(),
 });
 
+// Replace the formCrewSchema with this:
 const formCrewSchema = z.object({
-  name: z.string().min(1, { message: "Name is required." }),
-  role: z.string().min(1),
-  character_name: z.string().optional(),
-  credit_order: z.number(),
+  personId: z.string().min(1, { message: "Person is required." }),
+  role: z.string().min(1, { message: "Role is required." }),
+  characterName: z.string().optional(),
+  creditOrder: z.number().min(0, "Credit order must be a positive number"),
 });
-
-// const formSchema = z.object({
-//   title: z.string().min(1, "Title is required"),
-//   youtubeUrl: z.url("Invalid URL").min(1, "YouTube URL is required"),
-// });
-
-// type FormData = z.infer<typeof formSchema>;
 
 function SettingsComponent() {
   const { content } = Route.useLoaderData();
@@ -101,9 +96,14 @@ function SettingsComponent() {
     error: crewError,
   } = useGetCrew();
 
+  const { data: people = [], isLoading: peopleLoading } = useGetAllPeople();
+  const createCastCrewMutation = useCreateCastCrew();
+
   console.log("Crew data:", crew);
   console.log("Crew loading:", crewLoading);
   console.log("Crew error:", crewError);
+  console.log("People data:", people);
+
   const { mutate: deleteImage } = useDeleteImageByKey();
   const updateContentMutation = useUpdateContent();
 
@@ -122,17 +122,26 @@ function SettingsComponent() {
     },
   });
 
-  const formCrew = useForm<z.infer<typeof formCrewSchema>>({
+  // Replace the formCrew initialization with this:
+  type FormCrewValues = {
+    personId: string;
+    role: string;
+    characterName?: string;
+    creditOrder: number;
+  };
+
+  const formCrew = useForm<FormCrewValues>({
     resolver: zodResolver(formCrewSchema),
     defaultValues: {
+      personId: "",
       role: "",
-      character_name: "",
-      credit_order: 0,
+      characterName: "",
+      creditOrder: 0,
     },
   });
 
   const watchedType = formTextData.watch("type");
-  const role = formCrew.watch("role");
+  const watchedRole = formCrew.watch("role");
 
   // Simplified uploadFile function - no state management needed
   const uploadFile = useCallback(
@@ -315,39 +324,40 @@ function SettingsComponent() {
     },
   });
 
-  // Now conditional returns can happen after all hooks are called
-  if (mediaLoading) {
-    return (
-      <div className="flex min-h-[300px] w-full items-center justify-center">
-        <Loader className="size-8 animate-spin" />
-      </div>
-    );
-  }
+  const onSubmitCrew = async (values: FormCrewValues) => {
+    try {
+      console.log("Submitting crew data:", values);
 
-  if (mediaError) {
-    return (
-      <div className="flex min-h-[300px] w-full items-center justify-center">
-        <p className="text-red-500">Failed to load media. Please try again.</p>
-      </div>
-    );
-  }
+      // Validate role is one of the allowed values
+      const validRoles = ["producer", "actor", "director", "writer"] as const;
+      if (
+        !validRoles.includes(
+          values.role as "producer" | "actor" | "director" | "writer",
+        )
+      ) {
+        toast.error("Please select a valid role");
+        return;
+      }
 
-  console.log("Content data:", content);
-  console.log("Media data:", media);
+      await createCastCrewMutation.mutateAsync({
+        contentId,
+        personId: values.personId,
+        role: values.role as "producer" | "actor" | "director" | "writer",
+        characterName: values.characterName || undefined,
+        creditOrder: values.creditOrder,
+      });
 
-  // const onSubmit = (values: z.infer<typeof formSchema>) => {
-  //   console.log(values);
-  //   createMediaMutation.mutate({
-  //     contentId,
-  //     formData: {
-  //       title: values.title,
-  //       fileUrl: values.youtubeUrl,
-  //       fileSize: 0,
-  //     },
-  //     type: "video",
-  //     mediaCategory: "trailer",
-  //   });
-  // };
+      // Reset form on success
+      formCrew.reset({
+        personId: "",
+        role: "",
+        characterName: "",
+        creditOrder: 0,
+      });
+    } catch (error) {
+      console.error("Error submitting crew form:", error);
+    }
+  };
 
   // Handle delete with TanStack Query mutation
   const handleDeleteImage = (key: string) => {
@@ -373,6 +383,23 @@ function SettingsComponent() {
       formData: values,
     });
   };
+
+  // Now conditional returns can happen after all hooks are called
+  if (mediaLoading) {
+    return (
+      <div className="flex min-h-[300px] w-full items-center justify-center">
+        <Loader className="size-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (mediaError) {
+    return (
+      <div className="flex min-h-[300px] w-full items-center justify-center">
+        <p className="text-red-500">Failed to load media. Please try again.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
@@ -762,67 +789,101 @@ function SettingsComponent() {
           </div>
         </div>
       </div>
+      {/* Crew Section */}
       <div className="min-h-[150px] w-full bg-gray-800">
         <div className="mx-auto max-w-7xl px-5 py-10">
           <div className="w-full">
-            {/* Form Section */}
+            {/* Crew Form Section */}
             <Form {...formCrew}>
               <form
-                //onSubmit={formCrew.handleSubmit()}
-                className="flex flex-col gap-2 border-2 border-white md:flex-row"
+                onSubmit={formCrew.handleSubmit(onSubmitCrew)}
+                className="space-y-6"
               >
-                <FormField
-                  control={formCrew.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter name"
-                          {...field}
-                          className="w-50 bg-white text-black"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={formCrew.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="bg-white text-black">
-                            <SelectValue placeholder="Select role" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="producer">Producer</SelectItem>
-                          <SelectItem value="actor">Actor</SelectItem>
-                          <SelectItem value="director">Director</SelectItem>
-                          <SelectItem value="writer">Writer</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                {role === "actor" && (
+                <h2 className="mb-6 text-2xl font-bold text-white">
+                  Add Cast & Crew Member
+                </h2>
+
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  {/* Person Selection */}
                   <FormField
                     control={formCrew.control}
-                    name="character_name"
+                    name="personId"
                     render={({ field }) => (
                       <FormItem>
+                        <FormLabel className="text-white">Person *</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          disabled={peopleLoading}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="bg-white text-black">
+                              <SelectValue
+                                placeholder={
+                                  peopleLoading
+                                    ? "Loading people..."
+                                    : "Select a person"
+                                }
+                              />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {people.map((person) => (
+                              <SelectItem key={person.id} value={person.id}>
+                                {person.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Role Selection */}
+                  <FormField
+                    control={formCrew.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">Role *</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="bg-white text-black">
+                              <SelectValue placeholder="Select a role" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="actor">Actor</SelectItem>
+                            <SelectItem value="director">Director</SelectItem>
+                            <SelectItem value="producer">Producer</SelectItem>
+                            <SelectItem value="writer">Writer</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Character Name (only for actors) */}
+                {watchedRole === "actor" && (
+                  <FormField
+                    control={formCrew.control}
+                    name="characterName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-white">
+                          Character Name
+                        </FormLabel>
                         <FormControl>
                           <Input
                             placeholder="Enter character name"
+                            className="bg-white text-black"
                             {...field}
-                            className="w-50 bg-white text-black"
                           />
                         </FormControl>
                         <FormMessage />
@@ -831,32 +892,106 @@ function SettingsComponent() {
                   />
                 )}
 
-                {/* i need digit field for credit order */}
+                {/* Credit Order */}
                 <FormField
                   control={formCrew.control}
-                  name="credit_order"
+                  name="creditOrder"
                   render={({ field }) => (
                     <FormItem>
+                      <FormLabel className="text-white">Credit Order</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
-                          placeholder="Enter credit order (digit)"
+                          placeholder="0"
+                          min="0"
+                          className="bg-white text-black"
                           {...field}
-                          className="w-16 bg-white text-black"
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button
-                  type="submit"
-                  className="bg-custom-yellow-100 hover:bg-custom-yellow-300 px-6 font-semibold text-black"
-                >
-                  Add
-                </Button>
+
+                {/* Submit Button */}
+                <div className="flex justify-end pt-4">
+                  <Button
+                    type="submit"
+                    className="bg-custom-yellow-100 hover:bg-custom-yellow-300 px-8 py-2 font-semibold text-black"
+                    disabled={createCastCrewMutation.isPending || peopleLoading}
+                  >
+                    {createCastCrewMutation.isPending ? (
+                      <>
+                        <Loader className="mr-2 size-4 animate-spin" />
+                        Adding...
+                      </>
+                    ) : (
+                      "Add Member"
+                    )}
+                  </Button>
+                </div>
               </form>
             </Form>
+            {/* Display existing cast/crew members */}
+            // Replace the crew display section with this:
+            <div className="mt-8">
+              <h3 className="mb-4 text-xl font-bold text-white">
+                Current Cast & Crew
+              </h3>
+              {crewLoading ? (
+                <div className="flex justify-center">
+                  <Loader className="size-6 animate-spin text-white" />
+                </div>
+              ) : crewError ? (
+                <p className="text-red-500">Failed to load crew data.</p>
+              ) : crew && crew.length > 0 ? (
+                <div className="grid gap-3">
+                  {crew.map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between rounded-lg bg-gray-700 p-3"
+                    >
+                      <div className="flex-1">
+                        <p className="font-semibold text-white">
+                          {member.personName || "Unknown Person"}
+                        </p>
+                        <div className="flex items-center gap-2 text-sm text-gray-300">
+                          <span className="capitalize">{member.role}</span>
+                          {member.characterName && (
+                            <>
+                              <span>•</span>
+                              <span>"{member.characterName}"</span>
+                            </>
+                          )}
+                          {member.creditOrder !== null &&
+                            member.creditOrder !== undefined && (
+                              <>
+                                <span>•</span>
+                                <span>Order: {member.creditOrder}</span>
+                              </>
+                            )}
+                        </div>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          // You can add delete functionality here
+                          console.log("Delete member:", member.id);
+                        }}
+                        className="ml-4"
+                      >
+                        <Trash2Icon className="size-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="py-4 text-center text-gray-400">
+                  No cast or crew members added yet.
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { client } from "server/src/client";
 import { toast } from "sonner";
 
@@ -52,4 +53,11 @@ export const getPeople = async () => {
     console.error("Error fetching people:", error);
     throw error;
   }
+};
+
+export const useGetAllPeople = () => {
+  return useQuery({
+    queryKey: ["people"],
+    queryFn: getPeople,
+  });
 };
