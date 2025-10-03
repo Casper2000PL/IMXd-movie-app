@@ -1,4 +1,8 @@
-import { useGetCrew, useCreateCastCrew } from "@/api/cast-crew";
+import {
+  useGetCrew,
+  useCreateCastCrew,
+  useDeleteCastCrew,
+} from "@/api/cast-crew";
 import { getContentById, useUpdateContent } from "@/api/content";
 import { s3FileUpload } from "@/api/file";
 import { useDeleteImageByKey, useMediaByContentId } from "@/api/media";
@@ -25,8 +29,16 @@ import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { CameraIcon, ImagesIcon, Loader, Trash2Icon } from "lucide-react";
-import { useCallback, useState } from "react";
+import {
+  CameraIcon,
+  ImagesIcon,
+  Loader,
+  Trash2Icon,
+  Search,
+  X,
+  UserCircle,
+} from "lucide-react";
+import { useCallback, useState, useMemo } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -43,69 +55,48 @@ export const Route = createFileRoute("/content/$contentId/settings")({
 });
 
 const formSchemaTextData = z.object({
-  title: z.string().min(1, {
-    message: "Title is required.",
-  }),
-  type: z.string().min(1, {
-    message: "Please select a content type.",
-  }),
-  description: z.string().min(1, {
-    message: "Description is required.",
-  }),
-  releaseDate: z.string().min(1, {
-    message: "Release date is required.",
-  }),
-  runtime: z.string().min(1, {
-    message: "Runtime is required.",
-  }),
-  language: z.string().min(1, {
-    message: "Language is required.",
-  }),
-  status: z.string().min(1, {
-    message: "Status is required.",
-  }),
+  title: z.string().min(1, { message: "Title is required." }),
+  type: z.string().min(1, { message: "Please select a content type." }),
+  description: z.string().min(1, { message: "Description is required." }),
+  releaseDate: z.string().min(1, { message: "Release date is required." }),
+  runtime: z.string().min(1, { message: "Runtime is required." }),
+  language: z.string().min(1, { message: "Language is required." }),
+  status: z.string().min(1, { message: "Status is required." }),
   numberOfSeasons: z.string().optional(),
   numberOfEpisodes: z.string().optional(),
 });
 
-// Replace the formCrewSchema with this:
 const formCrewSchema = z.object({
   personId: z.string().min(1, { message: "Person is required." }),
-  role: z.string().min(1, { message: "Role is required." }),
+  role: z.enum(["producer", "actor", "director", "writer"]),
   characterName: z.string().optional(),
-  creditOrder: z.number().min(0, "Credit order must be a positive number"),
+  creditOrder: z.number().int().min(0, "Credit order must be 0 or greater"),
 });
+
+type FormCrewValues = z.infer<typeof formCrewSchema>;
 
 function SettingsComponent() {
   const { content } = Route.useLoaderData();
   const { contentId } = Route.useParams();
 
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const queryClient = useQueryClient();
 
-  // All other existing hooks remain the same...
   const {
     data: media = [],
     isLoading: mediaLoading,
     error: mediaError,
   } = useMediaByContentId(contentId);
-  const {
-    data: crew = [],
-    isLoading: crewLoading,
-    error: crewError,
-  } = useGetCrew();
-
+  const { data: crew = [] } = useGetCrew();
   const { data: people = [], isLoading: peopleLoading } = useGetAllPeople();
-  const createCastCrewMutation = useCreateCastCrew();
-
-  console.log("Crew data:", crew);
-  console.log("Crew loading:", crewLoading);
-  console.log("Crew error:", crewError);
-  console.log("People data:", people);
 
   const { mutate: deleteImage } = useDeleteImageByKey();
   const updateContentMutation = useUpdateContent();
+  const createCastCrewMutation = useCreateCastCrew();
+  const deleteCastCrewMutation = useDeleteCastCrew();
 
   const formTextData = useForm<z.infer<typeof formSchemaTextData>>({
     resolver: zodResolver(formSchemaTextData),
@@ -122,35 +113,43 @@ function SettingsComponent() {
     },
   });
 
-  // Replace the formCrew initialization with this:
-  type FormCrewValues = {
-    personId: string;
-    role: string;
-    characterName?: string;
-    creditOrder: number;
-  };
-
   const formCrew = useForm<FormCrewValues>({
     resolver: zodResolver(formCrewSchema),
     defaultValues: {
       personId: "",
-      role: "",
+      role: "actor",
       characterName: "",
-      creditOrder: 0,
+      creditOrder: 1,
     },
   });
 
   const watchedType = formTextData.watch("type");
   const watchedRole = formCrew.watch("role");
+  const watchedPersonId = formCrew.watch("personId");
 
-  // Simplified uploadFile function - no state management needed
+  // Find selected person
+  const selectedPerson = useMemo(() => {
+    return people.find((p) => p.id === watchedPersonId);
+  }, [people, watchedPersonId]);
+
+  // Filter people based on search
+  const filteredPeople = useMemo(() => {
+    if (!searchTerm) return people;
+    return people.filter((p) =>
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+  }, [people, searchTerm]);
+
+  // Get crew for this content
+  const contentCrew = useMemo(() => {
+    return crew.filter((c) => c.contentId === contentId);
+  }, [crew, contentId]);
+
   const uploadFile = useCallback(
     async (file: File, isPoster: boolean = true) => {
       try {
-        // Show upload start toast
         toast.loading(`Uploading ${file.name}...`, { id: file.name });
 
-        // Get presigned URL from your API
         const presignedUrlResponse = await s3FileUpload({
           file,
           mediaCategory: isPoster ? "poster" : "gallery_image",
@@ -161,7 +160,6 @@ function SettingsComponent() {
 
         const { presignedUrl } = await presignedUrlResponse.json();
 
-        // Upload to S3 using the presigned URL
         await new Promise<void>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
 
@@ -170,53 +168,34 @@ function SettingsComponent() {
               const percentageCompleted = Math.round(
                 (event.loaded / event.total) * 100,
               );
-              // Update the loading toast with progress
               toast.loading(
                 `Uploading ${file.name}... ${percentageCompleted}%`,
-                {
-                  id: file.name,
-                },
+                { id: file.name },
               );
             }
           };
 
           xhr.onload = () => {
             if (xhr.status >= 200 && xhr.status < 300) {
-              // Dismiss loading toast and show success
               toast.dismiss(file.name);
               toast.success(`${file.name} uploaded successfully`);
-
-              // Invalidate media queries to refetch the data
               queryClient.invalidateQueries({
                 queryKey: ["media", "content", contentId],
               });
-
               resolve();
             } else {
-              console.error(
-                `Upload failed with status ${xhr.status}`,
-                xhr.responseText,
-              );
               reject(new Error(`Upload failed with status ${xhr.status}`));
             }
           };
 
-          xhr.onerror = (error) => {
-            console.error("Upload error:", error);
+          xhr.onerror = () =>
             reject(new Error("Upload failed due to network error"));
-          };
 
-          // Configure the request
           xhr.open("PUT", presignedUrl);
           xhr.setRequestHeader("Content-Type", file.type);
-
-          // Send the file
           xhr.send(file);
         });
       } catch (error) {
-        console.error("Upload error:", error);
-
-        // Dismiss loading toast and show error
         toast.dismiss(file.name);
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error occurred";
@@ -226,15 +205,9 @@ function SettingsComponent() {
     [content.title, content.id, contentId, queryClient],
   );
 
-  // Simplified dropzone handlers - no state management
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      console.log("Accepted poster files:", acceptedFiles);
-
-      // Just upload each file - no state tracking needed
-      acceptedFiles.forEach((file) => {
-        uploadFile(file, true);
-      });
+      acceptedFiles.forEach((file) => uploadFile(file, true));
     },
     [uploadFile],
   );
@@ -242,34 +215,19 @@ function SettingsComponent() {
   const onDropRejected = useCallback((fileRejections: FileRejection[]) => {
     if (fileRejections.length > 0) {
       const tooManyFiles = fileRejections.find(
-        (fileRejection) => fileRejection.errors[0].code === "too-many-files",
+        (fr) => fr.errors[0].code === "too-many-files",
       );
-
       const fileTooLarge = fileRejections.find(
-        (fileRejection) => fileRejection.errors[0].code === "file-too-large",
+        (fr) => fr.errors[0].code === "file-too-large",
       );
-
-      if (tooManyFiles) {
-        toast.error("You can upload up to 5 files at a time.");
-      }
-
-      if (fileTooLarge) {
-        toast.error("Each file must be less than 25MB.");
-      }
+      if (tooManyFiles) toast.error("You can upload up to 5 files at a time.");
+      if (fileTooLarge) toast.error("Each file must be less than 25MB.");
     }
-
-    console.log("Rejected poster files:", fileRejections);
   }, []);
 
-  // Simplified other images dropzone handlers
   const onDropOtherImages = useCallback(
     (acceptedFiles: File[]) => {
-      console.log("Accepted other image files:", acceptedFiles);
-
-      // Just upload each file - no state tracking needed
-      acceptedFiles.forEach((file) => {
-        uploadFile(file, false);
-      });
+      acceptedFiles.forEach((file) => uploadFile(file, false));
     },
     [uploadFile],
   );
@@ -278,36 +236,25 @@ function SettingsComponent() {
     (fileRejections: FileRejection[]) => {
       if (fileRejections.length > 0) {
         const tooManyFiles = fileRejections.find(
-          (fileRejection) => fileRejection.errors[0].code === "too-many-files",
+          (fr) => fr.errors[0].code === "too-many-files",
         );
-
         const fileTooLarge = fileRejections.find(
-          (fileRejection) => fileRejection.errors[0].code === "file-too-large",
+          (fr) => fr.errors[0].code === "file-too-large",
         );
-
-        if (tooManyFiles) {
+        if (tooManyFiles)
           toast.error("You can upload up to 10 files at a time.");
-        }
-
-        if (fileTooLarge) {
-          toast.error("Each file must be less than 25MB.");
-        }
+        if (fileTooLarge) toast.error("Each file must be less than 25MB.");
       }
-
-      console.log("Rejected other image files:", fileRejections);
     },
     [],
   );
 
-  // Rest of your dropzone configuration remains the same
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     onDropRejected,
     maxFiles: 5,
-    maxSize: 25 * 1024 * 1024, // 25MB
-    accept: {
-      "image/*": [],
-    },
+    maxSize: 25 * 1024 * 1024,
+    accept: { "image/*": [] },
   });
 
   const {
@@ -318,73 +265,55 @@ function SettingsComponent() {
     onDrop: onDropOtherImages,
     onDropRejected: onDropRejectedOtherImages,
     maxFiles: 10,
-    maxSize: 25 * 1024 * 1024, // 25MB
-    accept: {
-      "image/*": [],
-    },
+    maxSize: 25 * 1024 * 1024,
+    accept: { "image/*": [] },
   });
 
-  const onSubmitCrew = async (values: FormCrewValues) => {
-    try {
-      console.log("Submitting crew data:", values);
-
-      // Validate role is one of the allowed values
-      const validRoles = ["producer", "actor", "director", "writer"] as const;
-      if (
-        !validRoles.includes(
-          values.role as "producer" | "actor" | "director" | "writer",
-        )
-      ) {
-        toast.error("Please select a valid role");
-        return;
-      }
-
-      await createCastCrewMutation.mutateAsync({
-        contentId,
-        personId: values.personId,
-        role: values.role as "producer" | "actor" | "director" | "writer",
-        characterName: values.characterName || undefined,
-        creditOrder: values.creditOrder,
-      });
-
-      // Reset form on success
-      formCrew.reset({
-        personId: "",
-        role: "",
-        characterName: "",
-        creditOrder: 0,
-      });
-    } catch (error) {
-      console.error("Error submitting crew form:", error);
-    }
-  };
-
-  // Handle delete with TanStack Query mutation
   const handleDeleteImage = (key: string) => {
-    setDeletingKey(key); // Set the key that's being deleted
+    setDeletingKey(key);
     deleteImage(key, {
-      onSuccess: () => {
-        setDeletingKey(null); // Clear the deleting key on success
-      },
-      onError: () => {
-        setDeletingKey(null); // Clear the deleting key on error
-      },
+      onSuccess: () => setDeletingKey(null),
+      onError: () => setDeletingKey(null),
     });
   };
 
-  const postersImages = media.filter((m) => m.mediaCategory === "poster");
-  const galleryImages = media.filter(
-    (m) => m.mediaCategory === "gallery_image",
-  );
+  const handleDeleteCrew = (id: string) => {
+    deleteCastCrewMutation.mutate(id);
+  };
 
   const onSubmitTextData = (values: z.infer<typeof formSchemaTextData>) => {
-    updateContentMutation.mutate({
-      id: content.id,
-      formData: values,
-    });
+    updateContentMutation.mutate({ id: content.id, formData: values });
   };
 
-  // Now conditional returns can happen after all hooks are called
+  const onSubmitCrew = (values: FormCrewValues) => {
+    createCastCrewMutation.mutate(
+      {
+        contentId,
+        personId: values.personId,
+        role: values.role,
+        characterName: values.characterName,
+        creditOrder: values.creditOrder,
+      },
+      {
+        onSuccess: () => {
+          formCrew.reset({
+            personId: "",
+            role: "actor",
+            characterName: "",
+            creditOrder: 1,
+          });
+          setSearchTerm("");
+        },
+      },
+    );
+  };
+
+  const selectPerson = (personId: string) => {
+    formCrew.setValue("personId", personId);
+    setShowDropdown(false);
+    setSearchTerm("");
+  };
+
   if (mediaLoading) {
     return (
       <div className="flex min-h-[300px] w-full items-center justify-center">
@@ -401,8 +330,14 @@ function SettingsComponent() {
     );
   }
 
+  const postersImages = media.filter((m) => m.mediaCategory === "poster");
+  const galleryImages = media.filter(
+    (m) => m.mediaCategory === "gallery_image",
+  );
+
   return (
     <div className="w-full">
+      {/* Content Form Section */}
       <div className="min-h-[300px] w-full bg-gray-800">
         <div className="mx-auto h-full w-full max-w-7xl">
           <div className="flex flex-col px-4 py-10">
@@ -411,7 +346,6 @@ function SettingsComponent() {
                 onSubmit={formTextData.handleSubmit(onSubmitTextData)}
                 className="space-y-6"
               >
-                {/* Title */}
                 <FormField
                   control={formTextData.control}
                   name="title"
@@ -430,7 +364,6 @@ function SettingsComponent() {
                   )}
                 />
 
-                {/* Description */}
                 <FormField
                   control={formTextData.control}
                   name="description"
@@ -439,7 +372,7 @@ function SettingsComponent() {
                       <FormLabel className="text-white">Description</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Enter a brief description or synopsis..."
+                          placeholder="Enter a brief description..."
                           className="min-h-[100px] bg-white text-black"
                           {...field}
                         />
@@ -449,8 +382,7 @@ function SettingsComponent() {
                   )}
                 />
 
-                {/* Row: Release Date, Runtime */}
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={formTextData.control}
                     name="releaseDate"
@@ -496,13 +428,8 @@ function SettingsComponent() {
                   />
                 </div>
 
-                {/* TV Show specific fields */}
                 {watchedType === "show" && (
-                  <div className="grid grid-cols-1 gap-4 rounded-lg py-4 md:grid-cols-2">
-                    <h3 className="col-span-full mb-2 text-lg font-semibold text-white">
-                      TV Show Details
-                    </h3>
-
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <FormField
                       control={formTextData.control}
                       name="numberOfSeasons"
@@ -547,13 +474,12 @@ function SettingsComponent() {
                   </div>
                 )}
 
-                {/* Row: Content, Language, Status */}
-                <div className="xs:flex-row flex flex-col gap-5">
+                <div className="flex flex-col gap-5 md:flex-row">
                   <FormField
                     control={formTextData.control}
                     name="type"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="flex-1">
                         <FormLabel className="text-white">
                           Content Type *
                         </FormLabel>
@@ -580,7 +506,7 @@ function SettingsComponent() {
                     control={formTextData.control}
                     name="language"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="flex-1">
                         <FormLabel className="text-white">Language</FormLabel>
                         <Select
                           onValueChange={field.onChange}
@@ -607,7 +533,7 @@ function SettingsComponent() {
                     control={formTextData.control}
                     name="status"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="flex-1">
                         <FormLabel className="text-white">Status</FormLabel>
                         <Select
                           onValueChange={field.onChange}
@@ -634,7 +560,6 @@ function SettingsComponent() {
                   />
                 </div>
 
-                {/* Submit Button */}
                 <div className="flex justify-center pt-6">
                   <Button
                     type="submit"
@@ -644,7 +569,7 @@ function SettingsComponent() {
                     {updateContentMutation.isPending ? (
                       <Loader className="size-4 animate-spin" />
                     ) : (
-                      "Edit"
+                      "Update Content"
                     )}
                   </Button>
                 </div>
@@ -653,7 +578,8 @@ function SettingsComponent() {
           </div>
         </div>
       </div>
-      {/* Images section */}
+
+      {/* Images Section */}
       <div className="bg-custom-yellow-300 w-full">
         <div className="mx-auto max-w-7xl px-5 py-10">
           <h1 className="font-roboto mb-10 text-center text-4xl font-extrabold text-black">
@@ -670,15 +596,15 @@ function SettingsComponent() {
                 <div className="relative">
                   <img
                     src={m.fileUrl}
-                    alt={m.title || "Media Image"}
+                    alt={m.title || "Poster"}
                     className="w-[200px] rounded-md object-cover"
                   />
                   <button
-                    className="absolute top-2 right-2 cursor-pointer rounded-md bg-red-500 p-2 transition-all duration-200 hover:bg-red-700 disabled:opacity-50"
+                    className="absolute top-2 right-2 rounded-md bg-red-500 p-2 transition-all hover:bg-red-700 disabled:opacity-50"
                     onClick={() => handleDeleteImage(m.key!)}
-                    disabled={deletingKey === m.key} // Check if THIS specific image is being deleted
+                    disabled={deletingKey === m.key}
                   >
-                    {deletingKey === m.key ? ( // Show loader only for the image being deleted
+                    {deletingKey === m.key ? (
                       <Loader className="size-5 animate-spin text-white" />
                     ) : (
                       <Trash2Icon className="size-5 text-white" />
@@ -691,14 +617,13 @@ function SettingsComponent() {
               </div>
             ))}
           </div>
-          {/* First Dropzone - Posters */}
           <div className="mt-10">
             <div
               className={cn(
                 isDragActive
                   ? "border-solid bg-black/40"
                   : "border-dashed bg-black/50",
-                "group border-custom-yellow-300 w-full cursor-pointer rounded-xl border-2 py-10 transition duration-200 hover:bg-black/40",
+                "group border-custom-yellow-300 w-full cursor-pointer rounded-xl border-2 py-10 transition hover:bg-black/40",
               )}
               {...getRootProps()}
             >
@@ -707,7 +632,7 @@ function SettingsComponent() {
                 <ImagesIcon
                   className={cn(
                     isDragActive ? "text-amber-200" : "text-custom-yellow-100",
-                    "size-8 duration-100 group-hover:text-amber-200",
+                    "size-8 group-hover:text-amber-200",
                   )}
                 />
                 <div className="mt-4 text-center">
@@ -721,7 +646,7 @@ function SettingsComponent() {
               </div>
             </div>
           </div>
-          {/* First Dropzone - Posters END */}
+
           <h1 className="font-roboto my-10 text-center text-4xl font-extrabold text-black">
             Gallery Images
           </h1>
@@ -736,15 +661,15 @@ function SettingsComponent() {
                 <div className="relative">
                   <img
                     src={m.fileUrl}
-                    alt={m.title || "Media Image"}
+                    alt={m.title || "Gallery"}
                     className="w-[200px] rounded-md object-cover"
                   />
                   <button
-                    className="absolute top-2 right-2 cursor-pointer rounded-md bg-red-500 p-2 transition-all duration-200 hover:bg-red-700 disabled:opacity-50"
+                    className="absolute top-2 right-2 rounded-md bg-red-500 p-2 transition-all hover:bg-red-700 disabled:opacity-50"
                     onClick={() => handleDeleteImage(m.key!)}
-                    disabled={deletingKey === m.key} // Check if THIS specific image is being deleted
+                    disabled={deletingKey === m.key}
                   >
-                    {deletingKey === m.key ? ( // Show loader only for the image being deleted
+                    {deletingKey === m.key ? (
                       <Loader className="size-5 animate-spin text-white" />
                     ) : (
                       <Trash2Icon className="size-5 text-white" />
@@ -757,14 +682,13 @@ function SettingsComponent() {
               </div>
             ))}
           </div>
-          {/* Second Dropzone - Other Images */}
           <div className="mt-10">
             <div
               className={cn(
                 isDragActiveOther
                   ? "border-solid bg-blue-500/60"
                   : "border-dashed bg-blue-700/70",
-                "group w-full cursor-pointer rounded-xl border-2 border-blue-400 py-10 transition duration-200 hover:bg-blue-800/60",
+                "group w-full cursor-pointer rounded-xl border-2 border-blue-400 py-10 transition hover:bg-blue-800/60",
               )}
               {...getRootPropsOther()}
             >
@@ -773,7 +697,7 @@ function SettingsComponent() {
                 <CameraIcon
                   className={cn(
                     isDragActiveOther ? "text-blue-200" : "text-blue-400",
-                    "size-8 duration-100 group-hover:text-blue-200",
+                    "size-8 group-hover:text-blue-200",
                   )}
                 />
                 <div className="mt-4 text-center">
@@ -789,58 +713,126 @@ function SettingsComponent() {
           </div>
         </div>
       </div>
-      {/* Crew Section */}
+
+      {/* Cast & Crew Section */}
       <div className="min-h-[150px] w-full bg-gray-800">
         <div className="mx-auto max-w-7xl px-5 py-10">
-          <div className="w-full">
-            {/* Crew Form Section */}
+          <h2 className="mb-6 text-3xl font-bold text-white">Cast & Crew</h2>
+
+          {/* Add Cast/Crew Form */}
+          <div className="mb-8 rounded-lg bg-gray-700 p-6">
+            <h3 className="mb-4 text-xl font-semibold text-white">
+              Add Member
+            </h3>
             <Form {...formCrew}>
               <form
                 onSubmit={formCrew.handleSubmit(onSubmitCrew)}
-                className="space-y-6"
+                className="space-y-4"
               >
-                <h2 className="mb-6 text-2xl font-bold text-white">
-                  Add Cast & Crew Member
-                </h2>
-
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                  {/* Person Selection */}
-                  <FormField
-                    control={formCrew.control}
-                    name="personId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-white">Person *</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                          disabled={peopleLoading}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="bg-white text-black">
-                              <SelectValue
-                                placeholder={
-                                  peopleLoading
-                                    ? "Loading people..."
-                                    : "Select a person"
-                                }
+                {/* Person Search */}
+                <FormField
+                  control={formCrew.control}
+                  name="personId"
+                  render={() => (
+                    <FormItem>
+                      <FormLabel className="text-white">
+                        Search Person *
+                      </FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          {selectedPerson ? (
+                            <div className="flex items-center gap-3 rounded-lg border-2 border-green-500 bg-gray-600 p-3">
+                              {selectedPerson.profileImageUrl ? (
+                                <img
+                                  src={selectedPerson.profileImageUrl}
+                                  alt={selectedPerson.name}
+                                  className="size-10 rounded-full object-cover object-top"
+                                />
+                              ) : (
+                                <div className="flex size-10 items-center justify-center rounded-full bg-gray-500">
+                                  <UserCircle className="size-8 text-gray-300" />
+                                </div>
+                              )}
+                              <span className="flex-1 font-medium text-white">
+                                {selectedPerson.name}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  formCrew.setValue("personId", "");
+                                  setSearchTerm("");
+                                }}
+                                className="cursor-pointer text-red-400 hover:text-red-300"
+                              >
+                                <X size={20} />
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <Search
+                                className="absolute top-3 left-3 text-gray-400"
+                                size={20}
                               />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {people.map((person) => (
-                              <SelectItem key={person.id} value={person.id}>
-                                {person.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                              <Input
+                                type="text"
+                                placeholder="Search for a person..."
+                                value={searchTerm}
+                                onChange={(e) => {
+                                  setSearchTerm(e.target.value);
+                                  setShowDropdown(true);
+                                }}
+                                onFocus={() => setShowDropdown(true)}
+                                className="bg-white pl-10 text-black"
+                                disabled={peopleLoading}
+                              />
+                              {showDropdown && (
+                                <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-600 bg-gray-800 shadow-lg">
+                                  {peopleLoading ? (
+                                    <div className="flex justify-center p-4">
+                                      <Loader className="size-5 animate-spin text-white" />
+                                    </div>
+                                  ) : filteredPeople.length > 0 ? (
+                                    filteredPeople.map((person) => (
+                                      <button
+                                        key={person.id}
+                                        type="button"
+                                        onClick={() => selectPerson(person.id)}
+                                        className="flex w-full items-center gap-3 border-b border-gray-700 px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-gray-700"
+                                      >
+                                        {person.profileImageUrl ? (
+                                          <img
+                                            src={person.profileImageUrl}
+                                            alt={person.name}
+                                            className="size-10 rounded-full object-cover"
+                                          />
+                                        ) : (
+                                          <div className="flex size-10 items-center justify-center rounded-full bg-gray-600">
+                                            <UserCircle className="size-8 text-gray-400" />
+                                          </div>
+                                        )}
+                                        <span className="font-medium text-white">
+                                          {person.name}
+                                        </span>
+                                      </button>
+                                    ))
+                                  ) : (
+                                    <p className="px-4 py-3 text-center text-gray-400">
+                                      No people found
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  {/* Role Selection */}
+                {/* Role, Character Name, Credit Order */}
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                   <FormField
                     control={formCrew.control}
                     name="role"
@@ -853,7 +845,7 @@ function SettingsComponent() {
                         >
                           <FormControl>
                             <SelectTrigger className="bg-white text-black">
-                              <SelectValue placeholder="Select a role" />
+                              <SelectValue />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -867,131 +859,137 @@ function SettingsComponent() {
                       </FormItem>
                     )}
                   />
-                </div>
 
-                {/* Character Name (only for actors) */}
-                {watchedRole === "actor" && (
+                  {watchedRole === "actor" && (
+                    <FormField
+                      control={formCrew.control}
+                      name="characterName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-white">
+                            Character Name
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="e.g., Neo"
+                              {...field}
+                              className="bg-white text-black"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
                   <FormField
                     control={formCrew.control}
-                    name="characterName"
+                    name="creditOrder"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-white">
-                          Character Name
+                          Credit Order
                         </FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="Enter character name"
-                            className="bg-white text-black"
+                            type="number"
+                            min="0"
+                            placeholder="1"
                             {...field}
+                            onChange={(e) =>
+                              field.onChange(parseInt(e.target.value) || 0)
+                            }
+                            className="bg-white text-black"
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                )}
-
-                {/* Credit Order */}
-                <FormField
-                  control={formCrew.control}
-                  name="creditOrder"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-white">Credit Order</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="0"
-                          min="0"
-                          className="bg-white text-black"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Submit Button */}
-                <div className="flex justify-end pt-4">
-                  <Button
-                    type="submit"
-                    className="bg-custom-yellow-100 hover:bg-custom-yellow-300 px-8 py-2 font-semibold text-black"
-                    disabled={createCastCrewMutation.isPending || peopleLoading}
-                  >
-                    {createCastCrewMutation.isPending ? (
-                      <>
-                        <Loader className="mr-2 size-4 animate-spin" />
-                        Adding...
-                      </>
-                    ) : (
-                      "Add Member"
-                    )}
-                  </Button>
                 </div>
+
+                <Button
+                  type="submit"
+                  className="bg-custom-yellow-100 hover:bg-custom-yellow-300 w-full px-8 py-5 font-semibold text-black"
+                  disabled={
+                    createCastCrewMutation.isPending ||
+                    !formCrew.formState.isValid
+                  }
+                >
+                  {createCastCrewMutation.isPending ? (
+                    <Loader className="size-4 animate-spin" />
+                  ) : (
+                    "Add"
+                  )}
+                </Button>
               </form>
             </Form>
-            {/* Display existing cast/crew members */}
-            // Replace the crew display section with this:
-            <div className="mt-8">
-              <h3 className="mb-4 text-xl font-bold text-white">
-                Current Cast & Crew
-              </h3>
-              {crewLoading ? (
-                <div className="flex justify-center">
-                  <Loader className="size-6 animate-spin text-white" />
-                </div>
-              ) : crewError ? (
-                <p className="text-red-500">Failed to load crew data.</p>
-              ) : crew && crew.length > 0 ? (
-                <div className="grid gap-3">
-                  {crew.map((member) => (
+          </div>
+
+          {/* Cast & Crew List */}
+          <div className="rounded-lg bg-gray-700 p-6">
+            <h3 className="mb-4 text-xl font-semibold text-white">
+              Current Cast & Crew
+            </h3>
+            {contentCrew.length === 0 ? (
+              <p className="text-center text-gray-400">
+                No cast or crew members added yet.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {contentCrew.map((member) => {
+                  const person = people.find((p) => p.id === member.personId);
+                  return (
                     <div
                       key={member.id}
-                      className="flex items-center justify-between rounded-lg bg-gray-700 p-3"
+                      className="flex items-center justify-between rounded-lg border border-gray-600 bg-gray-800 p-4"
                     >
-                      <div className="flex-1">
-                        <p className="font-semibold text-white">
-                          {member.personName || "Unknown Person"}
-                        </p>
-                        <div className="flex items-center gap-2 text-sm text-gray-300">
-                          <span className="capitalize">{member.role}</span>
-                          {member.characterName && (
-                            <>
-                              <span>•</span>
-                              <span>"{member.characterName}"</span>
-                            </>
-                          )}
-                          {member.creditOrder !== null &&
-                            member.creditOrder !== undefined && (
+                      <div className="flex items-center gap-4">
+                        {person?.profileImageUrl ? (
+                          <img
+                            src={person.profileImageUrl}
+                            alt={person.name}
+                            className="size-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex size-12 items-center justify-center rounded-full bg-gray-600">
+                            <UserCircle className="size-10 text-gray-400" />
+                          </div>
+                        )}
+                        <div>
+                          <h4 className="font-semibold text-white">
+                            {person?.name || "Unknown Person"}
+                          </h4>
+                          <div className="flex items-center gap-2 text-sm text-gray-300">
+                            <span className="capitalize">{member.role}</span>
+                            {member.characterName && (
                               <>
                                 <span>•</span>
-                                <span>Order: {member.creditOrder}</span>
+                                <span>as {member.characterName}</span>
                               </>
                             )}
+                            <span>•</span>
+                            <span>Order: {member.creditOrder}</span>
+                          </div>
                         </div>
                       </div>
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={() => {
-                          // You can add delete functionality here
-                          console.log("Delete member:", member.id);
-                        }}
-                        className="ml-4"
+                        onClick={() => handleDeleteCrew(member.id)}
+                        disabled={deleteCastCrewMutation.isPending}
                       >
-                        <Trash2Icon className="size-4" />
+                        {deleteCastCrewMutation.isPending ? (
+                          <Loader className="size-4 animate-spin" />
+                        ) : (
+                          <Trash2Icon className="size-4" />
+                        )}
                       </Button>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="py-4 text-center text-gray-400">
-                  No cast or crew members added yet.
-                </p>
-              )}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
