@@ -1,30 +1,16 @@
 import {
-  useGetCrew,
   useCreateCastCrew,
   useDeleteCastCrew,
+  useGetCastCrewByContentId,
 } from "@/api/cast-crew";
 import { getContentById, useUpdateContent } from "@/api/content";
 import { s3FileUpload } from "@/api/file";
 import { useDeleteImageByKey, useMediaByContentId } from "@/api/media";
 import { useGetAllPeople } from "@/api/people";
+import AddContentForm from "@/components/add-content-form";
+import AddMemberForm from "@/components/add-member-form";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
@@ -34,11 +20,9 @@ import {
   ImagesIcon,
   Loader,
   Trash2Icon,
-  Search,
-  X,
   UserCircle,
 } from "lucide-react";
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -80,8 +64,6 @@ function SettingsComponent() {
   const { contentId } = Route.useParams();
 
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -90,7 +72,7 @@ function SettingsComponent() {
     isLoading: mediaLoading,
     error: mediaError,
   } = useMediaByContentId(contentId);
-  const { data: crew = [] } = useGetCrew();
+  const { data: crew = [] } = useGetCastCrewByContentId(contentId);
   const { data: people = [], isLoading: peopleLoading } = useGetAllPeople();
 
   const { mutate: deleteImage } = useDeleteImageByKey();
@@ -122,23 +104,6 @@ function SettingsComponent() {
       creditOrder: 1,
     },
   });
-
-  const watchedType = formTextData.watch("type");
-  const watchedRole = formCrew.watch("role");
-  const watchedPersonId = formCrew.watch("personId");
-
-  // Find selected person
-  const selectedPerson = useMemo(() => {
-    return people.find((p) => p.id === watchedPersonId);
-  }, [people, watchedPersonId]);
-
-  // Filter people based on search
-  const filteredPeople = useMemo(() => {
-    if (!searchTerm) return people;
-    return people.filter((p) =>
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
-  }, [people, searchTerm]);
 
   // Get crew for this content
   const contentCrew = useMemo(() => {
@@ -302,16 +267,9 @@ function SettingsComponent() {
             characterName: "",
             creditOrder: 1,
           });
-          setSearchTerm("");
         },
       },
     );
-  };
-
-  const selectPerson = (personId: string) => {
-    formCrew.setValue("personId", personId);
-    setShowDropdown(false);
-    setSearchTerm("");
   };
 
   if (mediaLoading) {
@@ -338,244 +296,13 @@ function SettingsComponent() {
   return (
     <div className="w-full">
       {/* Content Form Section */}
-      <div className="min-h-[300px] w-full bg-gray-800">
-        <div className="mx-auto h-full w-full max-w-7xl">
-          <div className="flex flex-col px-4 py-10">
-            <Form {...formTextData}>
-              <form
-                onSubmit={formTextData.handleSubmit(onSubmitTextData)}
-                className="space-y-6"
-              >
-                <FormField
-                  control={formTextData.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-white">Title *</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter movie or show title"
-                          className="bg-white text-black"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={formTextData.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-white">Description</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Enter a brief description..."
-                          className="min-h-[100px] bg-white text-black"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <FormField
-                    control={formTextData.control}
-                    name="releaseDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-white">
-                          {watchedType === "show"
-                            ? "First Air Date"
-                            : "Release Date"}
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="date"
-                            {...field}
-                            className="bg-white text-black"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={formTextData.control}
-                    name="runtime"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-white">
-                          Runtime {watchedType === "show" && "(per episode)"}{" "}
-                          (minutes)
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="120"
-                            {...field}
-                            className="bg-white text-black"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {watchedType === "show" && (
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <FormField
-                      control={formTextData.control}
-                      name="numberOfSeasons"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-white">
-                            Number of Seasons
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="5"
-                              {...field}
-                              className="bg-white text-black"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={formTextData.control}
-                      name="numberOfEpisodes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-white">
-                            Total Episodes
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="62"
-                              {...field}
-                              className="bg-white text-black"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
-
-                <div className="flex flex-col gap-5 md:flex-row">
-                  <FormField
-                    control={formTextData.control}
-                    name="type"
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormLabel className="text-white">
-                          Content Type *
-                        </FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="bg-white text-black">
-                              <SelectValue placeholder="Select content type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="movie">Movie</SelectItem>
-                            <SelectItem value="show">TV Show</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={formTextData.control}
-                    name="language"
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormLabel className="text-white">Language</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="bg-white text-black">
-                              <SelectValue placeholder="Select language" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="en">English</SelectItem>
-                            <SelectItem value="es">Spanish</SelectItem>
-                            <SelectItem value="fr">French</SelectItem>
-                            <SelectItem value="de">German</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={formTextData.control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormLabel className="text-white">Status</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="bg-white text-black">
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="released">Released</SelectItem>
-                            <SelectItem value="upcoming">Upcoming</SelectItem>
-                            <SelectItem value="in_production">
-                              In Production
-                            </SelectItem>
-                            <SelectItem value="canceled">Canceled</SelectItem>
-                            <SelectItem value="ended">Ended</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="flex justify-center pt-6">
-                  <Button
-                    type="submit"
-                    className="bg-custom-yellow-100 hover:bg-custom-yellow-300 w-full px-8 py-5 font-semibold text-black"
-                    disabled={updateContentMutation.isPending}
-                  >
-                    {updateContentMutation.isPending ? (
-                      <Loader className="size-4 animate-spin" />
-                    ) : (
-                      "Update Content"
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </div>
+      <div className="min-h-[300px] w-full">
+        <div className="mx-auto h-full w-full max-w-4xl px-4 py-10">
+          <AddContentForm
+            onSubmit={onSubmitTextData}
+            defaultValues={formTextData.getValues()}
+            cardHeader="Edit Content"
+          />
         </div>
       </div>
 
@@ -715,282 +442,83 @@ function SettingsComponent() {
       </div>
 
       {/* Cast & Crew Section */}
-      <div className="min-h-[150px] w-full bg-gray-800">
-        <div className="mx-auto max-w-7xl px-5 py-10">
-          <h2 className="mb-6 text-3xl font-bold text-white">Cast & Crew</h2>
-
+      <div className="min-h-[150px] w-full bg-stone-100">
+        <div className="mx-auto max-w-4xl px-5 py-10">
           {/* Add Cast/Crew Form */}
-          <div className="mb-8 rounded-lg bg-gray-700 p-6">
-            <h3 className="mb-4 text-xl font-semibold text-white">
-              Add Member
-            </h3>
-            <Form {...formCrew}>
-              <form
-                onSubmit={formCrew.handleSubmit(onSubmitCrew)}
-                className="space-y-4"
-              >
-                {/* Person Search */}
-                <FormField
-                  control={formCrew.control}
-                  name="personId"
-                  render={() => (
-                    <FormItem>
-                      <FormLabel className="text-white">
-                        Search Person *
-                      </FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          {selectedPerson ? (
-                            <div className="flex items-center gap-3 rounded-lg border-2 border-green-500 bg-gray-600 p-3">
-                              {selectedPerson.profileImageUrl ? (
-                                <img
-                                  src={selectedPerson.profileImageUrl}
-                                  alt={selectedPerson.name}
-                                  className="size-10 rounded-full object-cover object-top"
-                                />
-                              ) : (
-                                <div className="flex size-10 items-center justify-center rounded-full bg-gray-500">
-                                  <UserCircle className="size-8 text-gray-300" />
-                                </div>
-                              )}
-                              <span className="flex-1 font-medium text-white">
-                                {selectedPerson.name}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  formCrew.setValue("personId", "");
-                                  setSearchTerm("");
-                                }}
-                                className="cursor-pointer text-red-400 hover:text-red-300"
-                              >
-                                <X size={20} />
-                              </button>
-                            </div>
-                          ) : (
-                            <>
-                              <Search
-                                className="absolute top-3 left-3 text-gray-400"
-                                size={20}
-                              />
-                              <Input
-                                type="text"
-                                placeholder="Search for a person..."
-                                value={searchTerm}
-                                onChange={(e) => {
-                                  setSearchTerm(e.target.value);
-                                  setShowDropdown(true);
-                                }}
-                                onFocus={() => setShowDropdown(true)}
-                                className="bg-white pl-10 text-black"
-                                disabled={peopleLoading}
-                              />
-                              {showDropdown && (
-                                <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-gray-600 bg-gray-800 shadow-lg">
-                                  {peopleLoading ? (
-                                    <div className="flex justify-center p-4">
-                                      <Loader className="size-5 animate-spin text-white" />
-                                    </div>
-                                  ) : filteredPeople.length > 0 ? (
-                                    filteredPeople.map((person) => (
-                                      <button
-                                        key={person.id}
-                                        type="button"
-                                        onClick={() => selectPerson(person.id)}
-                                        className="flex w-full items-center gap-3 border-b border-gray-700 px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-gray-700"
-                                      >
-                                        {person.profileImageUrl ? (
-                                          <img
-                                            src={person.profileImageUrl}
-                                            alt={person.name}
-                                            className="size-10 rounded-full object-cover"
-                                          />
-                                        ) : (
-                                          <div className="flex size-10 items-center justify-center rounded-full bg-gray-600">
-                                            <UserCircle className="size-8 text-gray-400" />
-                                          </div>
-                                        )}
-                                        <span className="font-medium text-white">
-                                          {person.name}
-                                        </span>
-                                      </button>
-                                    ))
-                                  ) : (
-                                    <p className="px-4 py-3 text-center text-gray-400">
-                                      No people found
-                                    </p>
-                                  )}
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+          <AddMemberForm
+            onSubmit={onSubmitCrew}
+            people={people}
+            peopleLoading={peopleLoading}
+            isPending={createCastCrewMutation.isPending}
+          />
 
-                {/* Role, Character Name, Credit Order */}
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <FormField
-                    control={formCrew.control}
-                    name="role"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-white">Role *</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="bg-white text-black">
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="actor">Actor</SelectItem>
-                            <SelectItem value="director">Director</SelectItem>
-                            <SelectItem value="producer">Producer</SelectItem>
-                            <SelectItem value="writer">Writer</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {watchedRole === "actor" && (
-                    <FormField
-                      control={formCrew.control}
-                      name="characterName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-white">
-                            Character Name
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="e.g., Neo"
-                              {...field}
-                              className="bg-white text-black"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
-
-                  <FormField
-                    control={formCrew.control}
-                    name="creditOrder"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-white">
-                          Credit Order
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min="0"
-                            placeholder="1"
-                            {...field}
-                            onChange={(e) =>
-                              field.onChange(parseInt(e.target.value) || 0)
-                            }
-                            className="bg-white text-black"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  className="bg-custom-yellow-100 hover:bg-custom-yellow-300 w-full px-8 py-5 font-semibold text-black"
-                  disabled={
-                    createCastCrewMutation.isPending ||
-                    !formCrew.formState.isValid
-                  }
-                >
-                  {createCastCrewMutation.isPending ? (
-                    <Loader className="size-4 animate-spin" />
-                  ) : (
-                    "Add"
-                  )}
-                </Button>
-              </form>
-            </Form>
-          </div>
-
-          {/* Cast & Crew List */}
-          <div className="rounded-lg bg-gray-700 p-6">
-            <h3 className="mb-4 text-xl font-semibold text-white">
+          {/* Current Cast/Crew List */}
+          <Card className="mt-5 border-2 border-stone-200 px-4 py-10">
+            <CardHeader className="text-xl font-bold">
               Current Cast & Crew
-            </h3>
-            {contentCrew.length === 0 ? (
-              <p className="text-center text-gray-400">
-                No cast or crew members added yet.
-              </p>
-            ) : (
-              <div className="space-y-4">
-                {contentCrew.map((member) => {
-                  const person = people.find((p) => p.id === member.personId);
-                  return (
-                    <div
-                      key={member.id}
-                      className="flex items-center justify-between rounded-lg border border-gray-600 bg-gray-800 p-4"
-                    >
-                      <div className="flex items-center gap-4">
-                        {person?.profileImageUrl ? (
-                          <img
-                            src={person.profileImageUrl}
-                            alt={person.name}
-                            className="size-12 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex size-12 items-center justify-center rounded-full bg-gray-600">
-                            <UserCircle className="size-10 text-gray-400" />
-                          </div>
-                        )}
-                        <div>
-                          <h4 className="font-semibold text-white">
-                            {person?.name || "Unknown Person"}
-                          </h4>
-                          <div className="flex items-center gap-2 text-sm text-gray-300">
-                            <span className="capitalize">{member.role}</span>
-                            {member.characterName && (
-                              <>
-                                <span>•</span>
-                                <span>as {member.characterName}</span>
-                              </>
-                            )}
-                            <span>•</span>
-                            <span>Order: {member.creditOrder}</span>
+            </CardHeader>
+            <CardContent>
+              {contentCrew.length === 0 ? (
+                <p className="text-muted-foreground text-center">
+                  No cast or crew members added yet.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {contentCrew.map((member) => {
+                    const person = people.find((p) => p.id === member.personId);
+                    return (
+                      <div
+                        key={member.id}
+                        className="inset flex items-center justify-between rounded-lg border-2 border-stone-200 p-4 shadow-xs"
+                      >
+                        <div className="flex items-center gap-4">
+                          {person?.profileImageUrl ? (
+                            <img
+                              src={person.profileImageUrl}
+                              alt={person.name}
+                              className="size-12 rounded-full object-cover object-top"
+                            />
+                          ) : (
+                            <div className="flex size-12 items-center justify-center rounded-full bg-gray-600">
+                              <UserCircle className="size-10 text-gray-400" />
+                            </div>
+                          )}
+                          <div>
+                            <h4 className="font-semibold">
+                              {person?.name || "Unknown Person"}
+                            </h4>
+                            <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                              <span className="capitalize">{member.role}</span>
+                              {member.characterName && (
+                                <>
+                                  <span>•</span>
+                                  <span>as {member.characterName}</span>
+                                </>
+                              )}
+                              <span>•</span>
+                              <span>Order: {member.creditOrder}</span>
+                            </div>
                           </div>
                         </div>
+                        <Button
+                          className="rounded-md bg-red-500 p-2 transition-all hover:bg-red-700 disabled:opacity-50"
+                          size="sm"
+                          onClick={() => handleDeleteCrew(member.id)}
+                          disabled={deleteCastCrewMutation.isPending}
+                        >
+                          {deleteCastCrewMutation.isPending ? (
+                            <Loader className="size-4 animate-spin" />
+                          ) : (
+                            <Trash2Icon className="size-4" />
+                          )}
+                        </Button>
                       </div>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteCrew(member.id)}
-                        disabled={deleteCastCrewMutation.isPending}
-                      >
-                        {deleteCastCrewMutation.isPending ? (
-                          <Loader className="size-4 animate-spin" />
-                        ) : (
-                          <Trash2Icon className="size-4" />
-                        )}
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

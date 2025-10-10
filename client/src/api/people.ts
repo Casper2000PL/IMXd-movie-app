@@ -55,6 +55,32 @@ export const getPeople = async () => {
   }
 };
 
+export const getPersonById = async (personId: string) => {
+  try {
+    const response = await client.api.people[":id"].$get({
+      param: { id: personId },
+    });
+    if (response.ok) {
+      const person = await response.json();
+      return person;
+    } else {
+      const errorText = await response.text();
+      console.error("Server error response:", errorText);
+      toast.error("Failed to fetch person.");
+    }
+  } catch (error) {
+    console.error("Error fetching person:", error);
+    throw error;
+  }
+};
+
+export const useGetPersonById = (personId: string) => {
+  return useQuery({
+    queryKey: ["people", personId],
+    queryFn: () => getPersonById(personId),
+  });
+};
+
 export const useGetAllPeople = () => {
   return useQuery({
     queryKey: ["people"],

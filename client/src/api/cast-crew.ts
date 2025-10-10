@@ -10,7 +10,7 @@ export interface CreateCastCrewForm {
   creditOrder?: number;
 }
 
-export const getCrew = async () => {
+export const getCastCrew = async () => {
   try {
     const response = await client.api.castCrew.$get();
     if (response.ok) {
@@ -50,7 +50,7 @@ export const createCastCrew = async (formData: CreateCastCrewForm) => {
   }
 };
 
-export const getCastCrewByContent = async (contentId: string) => {
+export const getCastCrewByContentId = async (contentId: string) => {
   try {
     const response = await client.api.castCrew[":contentId"].$get({
       param: { contentId },
@@ -91,17 +91,17 @@ export const deleteCastCrew = async (id: string) => {
   }
 };
 
-export const useGetCrew = () => {
+export const useGetCastCrew = () => {
   return useQuery({
     queryKey: ["crew"],
-    queryFn: getCrew,
+    queryFn: getCastCrew,
   });
 };
 
-export const useGetCastCrewByContent = (contentId: string) => {
+export const useGetCastCrewByContentId = (contentId: string) => {
   return useQuery({
     queryKey: ["crew", contentId],
-    queryFn: () => getCastCrewByContent(contentId),
+    queryFn: () => getCastCrewByContentId(contentId),
     enabled: !!contentId,
   });
 };

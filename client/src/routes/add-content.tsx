@@ -1,30 +1,12 @@
 import { createContent } from "@/api/content";
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import AddContentForm from "@/components/add-content-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Loader } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import z from "zod";
 
-const formSchema = z.object({
+const addContentSchema = z.object({
   title: z.string().min(1, {
     message: "Title is required.",
   }),
@@ -50,7 +32,7 @@ const formSchema = z.object({
   numberOfEpisodes: z.string().optional(),
 });
 
-type FormData = z.infer<typeof formSchema>;
+type FormData = z.infer<typeof addContentSchema>;
 
 export const Route = createFileRoute("/add-content")({
   component: RouteComponent,
@@ -59,8 +41,8 @@ export const Route = createFileRoute("/add-content")({
 function RouteComponent() {
   const navigate = useNavigate();
 
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+  const addContentForm = useForm<FormData>({
+    resolver: zodResolver(addContentSchema),
     defaultValues: {
       title: "",
       type: "",
@@ -74,9 +56,7 @@ function RouteComponent() {
     },
   });
 
-  const watchedType = form.watch("type");
-
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof addContentSchema>) => {
     try {
       console.log("Values: ", values);
       console.log("Values.title: ", values.title);
@@ -114,206 +94,11 @@ function RouteComponent() {
   return (
     <div className="mx-auto flex h-full w-full max-w-4xl px-4 py-10">
       <div className="w-full">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Title */}
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter movie or show title" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Content Type */}
-            <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Content Type *</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select content type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="movie">Movie</SelectItem>
-                      <SelectItem value="show">TV Show</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Description */}
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Enter a brief description or synopsis..."
-                      className="min-h-[100px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Row: Release Date, Runtime */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <FormField
-                control={form.control}
-                name="releaseDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      {watchedType === "show"
-                        ? "First Air Date"
-                        : "Release Date"}
-                    </FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="runtime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Runtime {watchedType === "show" && "(per episode)"}{" "}
-                      (minutes)
-                    </FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="120" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* TV Show specific fields */}
-            {watchedType === "show" && (
-              <div className="grid grid-cols-1 gap-4 rounded-lg py-4 md:grid-cols-2">
-                <h3 className="col-span-full mb-2 text-lg font-semibold">
-                  TV Show Details
-                </h3>
-
-                <FormField
-                  control={form.control}
-                  name="numberOfSeasons"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Number of Seasons</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="5" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="numberOfEpisodes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Total Episodes</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="62" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
-
-            {/* Row: Language, Status */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="language"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Language</FormLabel>
-                    <FormControl>
-                      <Input placeholder="en" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="released">Released</SelectItem>
-                        <SelectItem value="upcoming">Upcoming</SelectItem>
-                        <SelectItem value="in_production">
-                          In Production
-                        </SelectItem>
-                        <SelectItem value="canceled">Canceled</SelectItem>
-                        <SelectItem value="ended">Ended</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Submit Button */}
-            <div className="flex justify-center pt-6">
-              <Button
-                type="submit"
-                className="bg-custom-yellow-100 hover:bg-custom-yellow-300 w-full px-8 py-5 font-semibold text-black"
-                disabled={form.formState.isSubmitting}
-              >
-                {form.formState.isSubmitting ? (
-                  <Loader className="size-4 animate-spin" />
-                ) : (
-                  "Edit"
-                )}
-              </Button>
-            </div>
-          </form>
-        </Form>
+        <AddContentForm
+          onSubmit={onSubmit}
+          defaultValues={addContentForm.getValues()}
+          cardHeader="Add New Content"
+        />
       </div>
     </div>
   );

@@ -1,5 +1,7 @@
+import { getCastCrewByContentId } from "@/api/cast-crew";
 import { getContentById } from "@/api/content";
 import { createMedia, getMediaByContentId } from "@/api/media";
+import { getPersonById } from "@/api/people";
 import PosterCard from "@/components/poster-card";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,14 +50,39 @@ import z from "zod";
 
 export const Route = createFileRoute("/content/$contentId/")({
   loader: async ({ params }) => {
-    const [contentData, mediaData] = await Promise.all([
+    const [contentData, mediaData, castCrewData] = await Promise.all([
       getContentById(params.contentId),
       getMediaByContentId(params.contentId),
+      getCastCrewByContentId(params.contentId),
     ]);
+
+    // Handle undefined or null responses
+    const validCastCrewData = castCrewData || [];
+    const validMediaData = mediaData || [];
+
+    // Fetch all people data for cast/crew members
+    const peopleIds = [...new Set(validCastCrewData.map((cc) => cc.personId))];
+    const peopleData = await Promise.all(
+      peopleIds.map((id) => getPersonById(id)),
+    );
+
+    // Create a map for easy lookup, filtering out any undefined results
+    const peopleMap = new Map(
+      peopleData
+        .filter((person) => person)
+        .map((person) => [person!.id, person!]),
+    );
+
+    // Enrich cast/crew data with people information
+    const enrichedCastCrew = validCastCrewData.map((cc) => ({
+      ...cc,
+      person: peopleMap.get(cc.personId),
+    }));
 
     return {
       content: contentData,
-      media: mediaData,
+      media: validMediaData,
+      castCrew: enrichedCastCrew,
     };
   },
 
@@ -70,11 +97,12 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 function ContentDetailsComponent() {
-  const { content, media } = Route.useLoaderData();
+  const { content, media, castCrew } = Route.useLoaderData();
   const { contentId } = Route.useParams();
 
   console.log("Content data:", content);
   console.log("Media data:", media);
+  console.log("Cast/Crew data:", castCrew);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -98,12 +126,15 @@ function ContentDetailsComponent() {
     });
   };
 
+  // Filter cast/crew by role
+  const directors = castCrew.filter((cc) => cc.role === "director");
+  const writers = castCrew.filter((cc) => cc.role === "writer");
+  const actors = castCrew.filter((cc) => cc.role === "actor").slice(0, 3); // Top 3 stars
+
   const videos = media.filter((m) => m.type === "video");
   const postersImages = media.filter((m) => m.mediaCategory === "poster");
   const images = media.filter((m) => m.type === "image");
-
   const trailers = media.filter((m) => m.mediaCategory === "trailer");
-
   const galleryImages = media.filter(
     (m) => m.mediaCategory === "gallery_image",
   );
@@ -112,7 +143,6 @@ function ContentDetailsComponent() {
     <div className="relative w-full">
       <div className="relative min-h-screen w-full">
         {/* Background Image Layer */}
-
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
@@ -151,7 +181,6 @@ function ContentDetailsComponent() {
                 <p className="text-center font-sans text-sm font-semibold tracking-wider text-stone-400">
                   IMXd RATING
                 </p>
-                {/* rating button */}
                 <button className="flex cursor-pointer justify-between rounded-full px-4 py-[1px] transition-all duration-200 hover:bg-white/10">
                   <div className="flex items-center gap-2.5">
                     <StarIcon
@@ -177,7 +206,6 @@ function ContentDetailsComponent() {
                 <p className="text-center font-sans text-sm font-semibold tracking-wider text-stone-400">
                   POPULARITY
                 </p>
-                {/* ranking button */}
                 <button className="flex cursor-pointer gap-2.5 rounded-full px-2.5 py-1 transition-all duration-200 hover:bg-white/10">
                   <div className="flex items-center gap-1.5">
                     <TrendingUpIcon className="size-6 text-green-500" />
@@ -451,46 +479,92 @@ function ContentDetailsComponent() {
                 {/* Creators and Cast */}
                 <div className="my-3 flex flex-col">
                   <Separator className="bg-white/20" />
-                  <div className="flex gap-3 py-3">
-                    <p className="font-sans text-base font-semibold text-white">
-                      Director
-                    </p>
-                    <Link to="/" className="text-blue-400 hover:underline">
-                      Tim Mielants
-                    </Link>
-                  </div>
-                  <Separator className="bg-white/10" />
-                  <div className="flex gap-3 py-3">
-                    <p className="font-sans text-base font-semibold text-white">
-                      Writer
-                    </p>
-                    <Link to="/" className="text-blue-400 hover:underline">
-                      Max Porter
-                    </Link>
-                  </div>
-                  <Separator className="bg-white/20" />
-                  <Link
-                    to="/"
-                    className="group flex w-full items-center gap-3 py-3"
-                  >
-                    <p className="font-sans text-base font-semibold text-white">
-                      Stars
-                    </p>
-                    <p className="text-blue-400 hover:underline">
-                      Cillian Murphy
-                    </p>
-                    <div className="size-[3px] rounded-full bg-white" />
-                    <p className="text-blue-400 hover:underline">
-                      Tracey Ullman
-                    </p>
-                    <div className="size-[3px] rounded-full bg-white" />
-                    <p className="text-blue-400 hover:underline">Jay Lycurgo</p>
-                    <ChevronRightIcon
-                      className="group-hover:text-custom-yellow-300 mr-0.5 ml-auto size-5 justify-self-end text-white"
-                      strokeWidth={2}
-                    />
-                  </Link>
-                  <Separator className="bg-white/20" />
+
+                  {/* Directors */}
+                  {directors.length > 0 && (
+                    <>
+                      <div className="flex gap-3 py-3">
+                        <p className="font-sans text-base font-semibold text-white">
+                          {directors.length > 1 ? "Directors" : "Director"}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {directors.map((director, idx) => (
+                            <span key={director.id}>
+                              <Link
+                                to="/"
+                                className="text-blue-400 hover:underline"
+                              >
+                                {director.person?.name}
+                              </Link>
+                              {idx < directors.length - 1 && (
+                                <span className="text-white">, </span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <Separator className="bg-white/10" />
+                    </>
+                  )}
+
+                  {/* Writers */}
+                  {writers.length > 0 && (
+                    <>
+                      <div className="flex gap-3 py-3">
+                        <p className="font-sans text-base font-semibold text-white">
+                          {writers.length > 1 ? "Writers" : "Writer"}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {writers.map((writer, idx) => (
+                            <span key={writer.id}>
+                              <Link
+                                to="/"
+                                className="text-blue-400 hover:underline"
+                              >
+                                {writer.person?.name}
+                              </Link>
+                              {idx < writers.length - 1 && (
+                                <span className="text-white">, </span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <Separator className="bg-white/10" />
+                    </>
+                  )}
+
+                  {/* Stars */}
+                  {actors.length > 0 && (
+                    <>
+                      <Link
+                        to="/"
+                        className="group flex w-full items-center gap-3 py-3"
+                      >
+                        <p className="font-sans text-base font-semibold text-white">
+                          Stars
+                        </p>
+                        {actors.map((actor, idx) => (
+                          <span
+                            key={actor.id}
+                            className="flex items-center gap-1.5"
+                          >
+                            <span className="text-blue-400 hover:underline">
+                              {actor.person?.name}
+                            </span>
+                            {idx < actors.length - 1 && (
+                              <div className="size-[3px] rounded-full bg-white" />
+                            )}
+                          </span>
+                        ))}
+                        <ChevronRightIcon
+                          className="group-hover:text-custom-yellow-300 mr-0.5 ml-auto size-5 justify-self-end text-white"
+                          strokeWidth={2}
+                        />
+                      </Link>
+                      <Separator className="bg-white/20" />
+                    </>
+                  )}
                 </div>
               </div>
 

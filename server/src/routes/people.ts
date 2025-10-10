@@ -1,5 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import { createPeopleSchema } from "@server/schemas/people";
+import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "server/db";
 import { people } from "server/db/schemas/system-schema";
@@ -46,6 +47,33 @@ export const peopleRouter = new Hono()
       return c.json(
         {
           error: "Failed to fetch people",
+          details: error,
+        },
+        500
+      );
+    }
+  })
+  .get("/:id", async (c) => {
+    try {
+      const personId = c.req.param("id");
+
+      const person = await db
+        .select()
+        .from(people)
+        .where(eq(people.id, personId))
+        .limit(1)
+        .then((res) => res[0]);
+
+      if (!person) {
+        return c.json({ error: "Person not found" }, 404);
+      }
+
+      return c.json(person, 200);
+    } catch (error) {
+      console.error("Error fetching person:", error);
+      return c.json(
+        {
+          error: "Failed to fetch person",
           details: error,
         },
         500
