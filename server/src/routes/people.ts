@@ -1,8 +1,8 @@
 import { zValidator } from "@hono/zod-validator";
+import { createPeopleSchema } from "@server/schemas/people";
 import { Hono } from "hono";
 import { db } from "server/db";
 import { people } from "server/db/schemas/system-schema";
-import { createPeopleSchema } from "shared/dist/shared/src/schemas/people";
 
 export const peopleRouter = new Hono()
   .post("/", zValidator("form", createPeopleSchema), async (c) => {

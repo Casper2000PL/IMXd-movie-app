@@ -3,9 +3,9 @@ import { db } from "server/db";
 import { media } from "server/db/schemas/system-schema";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
-import { createMediaSchema } from "shared/src/schemas/media";
 import { S3 } from "server/lib/s3client";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { createMediaSchema } from "@server/schemas/media";
 
 export const mediaRouter = new Hono()
   .get("/", async (c) => {
