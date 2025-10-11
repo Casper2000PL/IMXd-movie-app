@@ -1,13 +1,13 @@
 import { zValidator } from "@hono/zod-validator";
+import { eq } from "drizzle-orm";
 import { Hono } from "hono";
-import { eq, and } from "drizzle-orm";
 import { db } from "server/db";
-import { castCrew, people, content } from "server/db/schemas/system-schema";
+import { castCrew, content, people } from "server/db/schemas/system-schema";
 import { z } from "zod";
 
 const createCastCrewSchema = z.object({
-  contentId: z.string().uuid(),
-  personId: z.string().uuid(),
+  contentId: z.string(),
+  personId: z.string(),
   role: z.enum(["producer", "actor", "director", "writer"]),
   characterName: z.string().optional(),
   creditOrder: z.number().int().positive().optional(),

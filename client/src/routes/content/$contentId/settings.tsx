@@ -4,11 +4,22 @@ import {
   useGetCastCrewByContentId,
 } from "@/api/cast-crew";
 import { getContentById, useUpdateContent } from "@/api/content";
+import {
+  useGetContentGenres,
+  useUpdateContentGenres,
+} from "@/api/content-genres";
 import { s3FileUpload } from "@/api/file";
-import { useDeleteImageByKey, useMediaByContentId } from "@/api/media";
+import { useGetGenres } from "@/api/genres";
+import {
+  useCreateMedia,
+  useDeleteImageByKey,
+  useMediaByContentId,
+} from "@/api/media";
 import { useGetAllPeople } from "@/api/people";
 import AddContentForm from "@/components/add-content-form";
+import AddGenresForm from "@/components/add-genres-form";
 import AddMemberForm from "@/components/add-member-form";
+import AddTrailerForm from "@/components/add-trailer-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -30,7 +41,7 @@ import z from "zod";
 
 export const Route = createFileRoute("/content/$contentId/settings")({
   loader: async ({ params }) => {
-    const contentData = await getContentById(params.contentId);
+    const [contentData] = await Promise.all([getContentById(params.contentId)]);
     return {
       content: contentData,
     };
@@ -57,30 +68,47 @@ const formCrewSchema = z.object({
   creditOrder: z.number().int().min(0, "Credit order must be 0 or greater"),
 });
 
-type FormCrewValues = z.infer<typeof formCrewSchema>;
+const formTrailerSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  youtubeUrl: z.url("Invalid URL").min(1, "YouTube URL is required"),
+});
 
+type FormSchemaTextData = z.infer<typeof formSchemaTextData>;
+type FormTrailerData = z.infer<typeof formTrailerSchema>;
+type FormCrewValues = z.infer<typeof formCrewSchema>;
+type FormGenres = {
+  genre: string[];
+};
 function SettingsComponent() {
+  const queryClient = useQueryClient();
+
   const { content } = Route.useLoaderData();
   const { contentId } = Route.useParams();
 
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
-
-  const queryClient = useQueryClient();
 
   const {
     data: media = [],
     isLoading: mediaLoading,
     error: mediaError,
   } = useMediaByContentId(contentId);
+
   const { data: crew = [] } = useGetCastCrewByContentId(contentId);
   const { data: people = [], isLoading: peopleLoading } = useGetAllPeople();
+  const { data: contentGenres = [] } = useGetContentGenres(contentId);
+  const { data: genres = [] } = useGetGenres();
 
   const { mutate: deleteImage } = useDeleteImageByKey();
   const updateContentMutation = useUpdateContent();
   const createCastCrewMutation = useCreateCastCrew();
   const deleteCastCrewMutation = useDeleteCastCrew();
+  const createMediaMutation = useCreateMedia();
+  // const addGenresMutation = useAddContentGenresBulk();
+  const updateGenresMutation = useUpdateContentGenres();
 
-  const formTextData = useForm<z.infer<typeof formSchemaTextData>>({
+  const trailers = media.filter((m) => m.mediaCategory === "trailer");
+
+  const formTextData = useForm<FormSchemaTextData>({
     resolver: zodResolver(formSchemaTextData),
     defaultValues: {
       title: content.title || "",
@@ -92,6 +120,14 @@ function SettingsComponent() {
       status: content.status || "",
       numberOfSeasons: String(content.numberOfSeasons) || "",
       numberOfEpisodes: String(content.numberOfEpisodes) || "",
+    },
+  });
+
+  const formTrailer = useForm<FormTrailerData>({
+    resolver: zodResolver(formTrailerSchema),
+    defaultValues: {
+      title: trailers.length > 0 ? trailers[0].title || "" : "",
+      youtubeUrl: trailers.length > 0 ? trailers[0].fileUrl || "" : "",
     },
   });
 
@@ -250,6 +286,19 @@ function SettingsComponent() {
     updateContentMutation.mutate({ id: content.id, formData: values });
   };
 
+  const onSubmitTrailer = (values: FormTrailerData) => {
+    createMediaMutation.mutate({
+      contentId,
+      formData: {
+        title: values.title,
+        fileUrl: values.youtubeUrl,
+        fileSize: 0,
+      },
+      type: "video",
+      mediaCategory: "trailer",
+    });
+  };
+
   const onSubmitCrew = (values: FormCrewValues) => {
     createCastCrewMutation.mutate(
       {
@@ -270,6 +319,15 @@ function SettingsComponent() {
         },
       },
     );
+  };
+
+  const onSubmitGenres = (values: FormGenres) => {
+    console.log("Submitting genres:", values);
+
+    updateGenresMutation.mutate({
+      contentId,
+      genreIds: values.genre,
+    });
   };
 
   if (mediaLoading) {
@@ -327,7 +385,7 @@ function SettingsComponent() {
                     className="w-[200px] rounded-md object-cover"
                   />
                   <button
-                    className="absolute top-2 right-2 rounded-md bg-red-500 p-2 transition-all hover:bg-red-700 disabled:opacity-50"
+                    className="absolute top-2 right-2 cursor-pointer rounded-md bg-red-500 p-2 transition-all hover:bg-red-700 disabled:opacity-50"
                     onClick={() => handleDeleteImage(m.key!)}
                     disabled={deletingKey === m.key}
                   >
@@ -392,7 +450,7 @@ function SettingsComponent() {
                     className="w-[200px] rounded-md object-cover"
                   />
                   <button
-                    className="absolute top-2 right-2 rounded-md bg-red-500 p-2 transition-all hover:bg-red-700 disabled:opacity-50"
+                    className="absolute top-2 right-2 cursor-pointer rounded-md bg-red-500 p-2 transition-all hover:bg-red-700 disabled:opacity-50"
                     onClick={() => handleDeleteImage(m.key!)}
                     disabled={deletingKey === m.key}
                   >
@@ -437,6 +495,12 @@ function SettingsComponent() {
                 </div>
               </div>
             </div>
+          </div>
+          <div className="mx-auto mt-10 max-w-4xl px-5">
+            <AddTrailerForm
+              onSubmit={onSubmitTrailer}
+              defaultValues={formTrailer.getValues()}
+            />
           </div>
         </div>
       </div>
@@ -519,6 +583,17 @@ function SettingsComponent() {
               )}
             </CardContent>
           </Card>
+        </div>
+      </div>
+
+      {/* Genres Section */}
+      <div className="min-h-[150px] w-full bg-stone-100">
+        <div className="mx-auto max-w-4xl px-5 py-10">
+          <AddGenresForm
+            onSubmit={onSubmitGenres}
+            genres={genres}
+            contentGenres={contentGenres}
+          />
         </div>
       </div>
     </div>

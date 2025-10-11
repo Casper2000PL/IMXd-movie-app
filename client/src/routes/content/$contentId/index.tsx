@@ -1,9 +1,9 @@
 import { getCastCrewByContentId } from "@/api/cast-crew";
 import { getContentById } from "@/api/content";
-import { createMedia, getMediaByContentId } from "@/api/media";
+import { getContentGenres } from "@/api/content-genres";
+import { getMediaByContentId } from "@/api/media";
 import { getPersonById } from "@/api/people";
 import PosterCard from "@/components/poster-card";
-import { Button } from "@/components/ui/button";
 import {
   Carousel,
   CarouselContent,
@@ -11,26 +11,10 @@ import {
   CarouselNextCustom,
   CarouselPreviousCustom,
 } from "@/components/ui/carousel";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { convertToEmbedUrl } from "@/utils/convertToEmbedUrl";
 import { extractYearFromDate, formatRuntime } from "@/utils/dateUtils";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogClose } from "@radix-ui/react-dialog";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -45,16 +29,16 @@ import {
   TriangleIcon,
   XIcon,
 } from "lucide-react";
-import { useForm } from "react-hook-form";
-import z from "zod";
 
 export const Route = createFileRoute("/content/$contentId/")({
   loader: async ({ params }) => {
-    const [contentData, mediaData, castCrewData] = await Promise.all([
-      getContentById(params.contentId),
-      getMediaByContentId(params.contentId),
-      getCastCrewByContentId(params.contentId),
-    ]);
+    const [contentData, mediaData, castCrewData, genresData] =
+      await Promise.all([
+        getContentById(params.contentId),
+        getMediaByContentId(params.contentId),
+        getCastCrewByContentId(params.contentId),
+        getContentGenres(params.contentId),
+      ]);
 
     // Handle undefined or null responses
     const validCastCrewData = castCrewData || [];
@@ -83,48 +67,21 @@ export const Route = createFileRoute("/content/$contentId/")({
       content: contentData,
       media: validMediaData,
       castCrew: enrichedCastCrew,
+      genres: genresData,
     };
   },
 
   component: ContentDetailsComponent,
 });
 
-const formSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  youtubeUrl: z.url("Invalid URL").min(1, "YouTube URL is required"),
-});
-
-type FormData = z.infer<typeof formSchema>;
-
 function ContentDetailsComponent() {
-  const { content, media, castCrew } = Route.useLoaderData();
+  const { content, media, castCrew, genres } = Route.useLoaderData();
   const { contentId } = Route.useParams();
 
   console.log("Content data:", content);
   console.log("Media data:", media);
   console.log("Cast/Crew data:", castCrew);
-
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      youtubeUrl: "",
-    },
-  });
-
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log(values);
-    createMedia({
-      contentId,
-      formData: {
-        title: values.title,
-        fileUrl: values.youtubeUrl,
-        fileSize: 0,
-      },
-      type: "video",
-      mediaCategory: "trailer",
-    });
-  };
+  console.log("Genres data:", genres);
 
   // Filter cast/crew by role
   const directors = castCrew.filter((cc) => cc.role === "director");
@@ -311,70 +268,11 @@ function ContentDetailsComponent() {
                     allowFullScreen
                   ></iframe>
                 ) : (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <button className="h-full w-full cursor-pointer rounded-md bg-gray-800 transition-all duration-200 hover:bg-white/20">
-                        <div className="flex flex-col items-center justify-center gap-4">
-                          <p className="font-sans text-xl font-semibold text-white">
-                            Add trailer
-                          </p>
-                          <PlusIcon className="size-8 text-white" />
-                        </div>
-                      </button>
-                    </DialogTrigger>
-                    <DialogContent className="flex h-full max-h-screen !w-full !max-w-full flex-col items-center rounded-none border-none bg-gray-800 px-2 pt-4 pb-0 text-white outline-none md:px-4 xl:px-10">
-                      <DialogHeader>
-                        <DialogTitle className="text-center">
-                          Add Youtube Trailer
-                        </DialogTitle>
-                      </DialogHeader>
-                      <Form {...form}>
-                        <form
-                          onSubmit={form.handleSubmit(onSubmit)}
-                          className="mt-10 w-full max-w-xl space-y-6"
-                        >
-                          <FormField
-                            control={form.control}
-                            name="title"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Title</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="Enter video title"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="youtubeUrl"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>YouTube URL</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="Enter YouTube URL"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <Button
-                            type="submit"
-                            className="bg-custom-yellow-300 hover:bg-custom-yellow-100/70 w-full font-semibold text-black"
-                          >
-                            Add Trailer
-                          </Button>
-                        </form>
-                      </Form>
-                    </DialogContent>
-                  </Dialog>
+                  <div className="flex h-full w-full items-center justify-center rounded-md bg-gray-800">
+                    <p className="font-sans text-xl font-semibold text-white">
+                      No trailer
+                    </p>
+                  </div>
                 )}
               </div>
               <div className="flex flex-1 flex-col gap-1">
@@ -459,18 +357,15 @@ function ContentDetailsComponent() {
               <div className="w-full flex-4">
                 {/* Genres Badges */}
                 <div className="my-4 flex w-full gap-3">
-                  <Link
-                    to="/"
-                    className="rounded-full border-1 border-stone-300 px-3 py-0.5 font-sans text-sm text-white hover:bg-white/10"
-                  >
-                    Drama
-                  </Link>
-                  <Link
-                    to="/"
-                    className="rounded-full border-1 border-stone-300 px-3 py-0.5 font-sans text-sm text-white hover:bg-white/10"
-                  >
-                    Comedy
-                  </Link>
+                  {genres.map((genre) => (
+                    <Link
+                      to="/"
+                      key={genre.id}
+                      className="rounded-full border-1 border-stone-300 px-3 py-0.5 font-sans text-sm text-white hover:bg-white/10"
+                    >
+                      {genre.name}
+                    </Link>
+                  ))}
                 </div>
                 {/* Description */}
                 <div className="font-medium text-white">
@@ -553,7 +448,7 @@ function ContentDetailsComponent() {
                               {actor.person?.name}
                             </span>
                             {idx < actors.length - 1 && (
-                              <div className="size-[3px] rounded-full bg-white" />
+                              <div className="ml-1 size-[3px] rounded-full bg-white" />
                             )}
                           </span>
                         ))}
@@ -569,7 +464,7 @@ function ContentDetailsComponent() {
               </div>
 
               {/* Add to watchlist button */}
-              <div className="flex w-full flex-2 items-center justify-center">
+              <div className="mt-4 flex w-full flex-2 items-center justify-center">
                 <div className="flex w-full flex-col gap-4">
                   <div className="flex items-center gap-2">
                     <div className="bg-custom-yellow-100 h-8 w-1 rounded-full" />
