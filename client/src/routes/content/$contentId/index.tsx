@@ -3,7 +3,9 @@ import { getContentById } from "@/api/content";
 import { getContentGenres } from "@/api/content-genres";
 import { getMediaByContentId } from "@/api/media";
 import { getPersonById } from "@/api/people";
+import CastLink from "@/components/cast-link";
 import PosterCard from "@/components/poster-card";
+import SectionLink from "@/components/section-link";
 import {
   Carousel,
   CarouselContent,
@@ -87,6 +89,7 @@ function ContentDetailsComponent() {
   const directors = castCrew.filter((cc) => cc.role === "director");
   const writers = castCrew.filter((cc) => cc.role === "writer");
   const actors = castCrew.filter((cc) => cc.role === "actor").slice(0, 3); // Top 3 stars
+  const topCast = castCrew.filter((cc) => cc.role === "actor").slice(0, 18);
 
   const videos = media.filter((m) => m.type === "video");
   const postersImages = media.filter((m) => m.mediaCategory === "poster");
@@ -382,9 +385,12 @@ function ContentDetailsComponent() {
                         <p className="font-sans text-base font-semibold text-white">
                           {directors.length > 1 ? "Directors" : "Director"}
                         </p>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           {directors.map((director, idx) => (
-                            <span key={director.id}>
+                            <span
+                              key={director.id}
+                              className="flex items-center gap-2"
+                            >
                               <Link
                                 to="/"
                                 className="text-blue-400 hover:underline"
@@ -392,7 +398,7 @@ function ContentDetailsComponent() {
                                 {director.person?.name}
                               </Link>
                               {idx < directors.length - 1 && (
-                                <span className="text-white">, </span>
+                                <div className="size-[2px] rounded-full bg-white" />
                               )}
                             </span>
                           ))}
@@ -409,9 +415,12 @@ function ContentDetailsComponent() {
                         <p className="font-sans text-base font-semibold text-white">
                           {writers.length > 1 ? "Writers" : "Writer"}
                         </p>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           {writers.map((writer, idx) => (
-                            <span key={writer.id}>
+                            <span
+                              key={writer.id}
+                              className="flex items-center gap-2"
+                            >
                               <Link
                                 to="/"
                                 className="text-blue-400 hover:underline"
@@ -419,7 +428,7 @@ function ContentDetailsComponent() {
                                 {writer.person?.name}
                               </Link>
                               {idx < writers.length - 1 && (
-                                <span className="text-white">, </span>
+                                <div className="size-[2px] rounded-full bg-white" />
                               )}
                             </span>
                           ))}
@@ -436,25 +445,33 @@ function ContentDetailsComponent() {
                         to="/"
                         className="group flex w-full items-center gap-3 py-3"
                       >
-                        <p className="font-sans text-base font-semibold text-white">
+                        <span className="font-sans text-base font-semibold text-white group-hover:text-white/60">
                           Stars
-                        </p>
-                        {actors.map((actor, idx) => (
-                          <span
-                            key={actor.id}
-                            className="flex items-center gap-1.5"
-                          >
-                            <span className="text-blue-400 hover:underline">
-                              {actor.person?.name}
-                            </span>
-                            {idx < actors.length - 1 && (
-                              <div className="ml-1 size-[3px] rounded-full bg-white" />
-                            )}
-                          </span>
-                        ))}
+                        </span>
+                        <div className="flex-1">
+                          <ul className="flex items-center gap-3">
+                            {actors.map((actor, idx) => (
+                              <li
+                                key={actor.id}
+                                className="flex items-center gap-3"
+                              >
+                                <Link
+                                  to="/"
+                                  className="text-blue-400 hover:underline"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {actor.person?.name}
+                                </Link>
+                                {idx < actors.length - 1 && (
+                                  <div className="size-[2px] rounded-full bg-white" />
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                         <ChevronRightIcon
-                          className="group-hover:text-custom-yellow-300 mr-0.5 ml-auto size-5 justify-self-end text-white"
-                          strokeWidth={2}
+                          className="group-hover:text-custom-yellow-300 ml-auto size-5 text-white"
+                          strokeWidth={2.5}
                         />
                       </Link>
                       <Separator className="bg-white/20" />
@@ -509,7 +526,138 @@ function ContentDetailsComponent() {
           </Link>
         </div>
       </div>
-      <div className="h-[300px] w-full bg-blue-400"></div>
+      {/* White Section */}
+      <div className="w-full bg-white">
+        <div className="mx-auto h-full w-full max-w-7xl py-6">
+          <div className="flex min-h-[300px] w-full gap-14 px-2 xl:px-0">
+            <div className="flex w-full flex-7 flex-col border-2 border-blue-500">
+              {/* Top Cast Section */}
+              <div className="w-full">
+                <SectionLink label="Top Cast" numberOfItems={topCast.length} />
+                {/* Grid 2 Cols 9 Rows */}
+                <div className="my-6 grid grid-cols-2 gap-5">
+                  {topCast.map((actor) => (
+                    <CastLink
+                      key={actor.id}
+                      imgUrl={actor.personProfileImageUrl || ""}
+                      name={actor.person?.name || ""}
+                      character={actor.characterName || ""}
+                    />
+                  ))}
+                </div>
+                {/* Other Cast Crew Details */}
+                <div className="my-6 flex w-full flex-col">
+                  {/* <Separator className="my-1 w-full bg-black/15" /> */}
+                  <div className="my-3 flex flex-col">
+                    <Separator className="bg-black/20" />
+                    {/* Directors */}
+                    {directors.length > 0 && (
+                      <>
+                        <div className="flex gap-3 py-1.5">
+                          <p className="font-sans text-base font-semibold text-black">
+                            {directors.length > 1 ? "Directors" : "Director"}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {directors.map((director, idx) => (
+                              <span
+                                key={director.id}
+                                className="flex items-center gap-2"
+                              >
+                                <Link
+                                  to="/"
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  {director.person?.name}
+                                </Link>
+                                {idx < directors.length - 1 && (
+                                  <div className="size-[2px] rounded-full bg-black" />
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <Separator className="bg-white/10" />
+                      </>
+                    )}
+                    <Separator className="bg-black/20" />
+                    {/* Writers */}
+                    {writers.length > 0 && (
+                      <>
+                        <div className="flex gap-3 py-1.5">
+                          <p className="font-sans text-base font-semibold text-black">
+                            {writers.length > 1 ? "Writers" : "Writer"}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {writers.map((writer, idx) => (
+                              <span
+                                key={writer.id}
+                                className="flex items-center gap-2"
+                              >
+                                <Link
+                                  to="/"
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  {writer.person?.name}
+                                </Link>
+                                {idx < writers.length - 1 && (
+                                  <div className="size-[2px] rounded-full bg-black" />
+                                )}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <Separator className="bg-white/10" />
+                      </>
+                    )}
+                    <Separator className="bg-black/20" />
+                    {/* Stars */}
+                    {actors.length > 0 && (
+                      <>
+                        <Link
+                          to="/"
+                          className="group flex w-full items-center gap-3 py-1.5"
+                        >
+                          <span className="font-sans text-base font-semibold text-black group-hover:text-black/60">
+                            Stars
+                          </span>
+                          <div className="flex-1">
+                            <ul className="flex items-center gap-3">
+                              {actors.map((actor, idx) => (
+                                <li
+                                  key={actor.id}
+                                  className="flex items-center gap-3"
+                                >
+                                  <Link
+                                    to="/"
+                                    className="text-blue-600 hover:underline"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {actor.person?.name}
+                                  </Link>
+                                  {idx < actors.length - 1 && (
+                                    <div className="size-[2px] rounded-full bg-black" />
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          <ChevronRightIcon
+                            className="ml-auto size-5 text-stone-500 group-hover:text-stone-800"
+                            strokeWidth={2.5}
+                          />
+                        </Link>
+                        <Separator className="bg-white/20" />
+                      </>
+                    )}
+                    <Separator className="bg-black/20" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="hidden w-full flex-3 border-2 border-red-500 lg:flex"></div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
