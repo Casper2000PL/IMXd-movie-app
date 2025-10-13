@@ -1,13 +1,20 @@
-import { TriangleIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface CelebCardProps {
   name: string;
   image: string;
+  characterName?: string;
+  lightMode?: boolean;
 }
 
-const CelebCard = ({ name, image }: CelebCardProps) => {
+const CelebCard = ({
+  name,
+  image,
+  characterName,
+  lightMode,
+}: CelebCardProps) => {
   return (
-    <div className="flex w-48 cursor-pointer flex-col gap-5 transition duration-200 hover:opacity-70">
+    <div className="flex w-48 cursor-pointer flex-col gap-5 transition duration-200 hover:opacity-90">
       <div className="h-48 w-48 overflow-hidden rounded-full">
         <img
           src={image}
@@ -16,7 +23,7 @@ const CelebCard = ({ name, image }: CelebCardProps) => {
         />
       </div>
       <div className="font-noto-sans flex w-full flex-col items-center text-base">
-        <div className="flex gap-1">
+        {/* <div className="flex gap-1">
           <p className="text-white">30</p>
           <p className="text-stone-400">
             (
@@ -28,8 +35,17 @@ const CelebCard = ({ name, image }: CelebCardProps) => {
             </span>
             8,439)
           </p>
-        </div>
-        <p className="text-white">{name}</p>
+        </div> */}
+        <p
+          className={cn(
+            `font-roboto font-semibold ${lightMode ? "text-black" : "text-white"}`,
+          )}
+        >
+          {name}
+        </p>
+        <p className="font-roboto text-muted-foreground text-sm font-normal">
+          {characterName}
+        </p>
       </div>
     </div>
   );

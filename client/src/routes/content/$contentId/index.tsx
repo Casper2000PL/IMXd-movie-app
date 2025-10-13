@@ -4,6 +4,7 @@ import { getContentGenres } from "@/api/content-genres";
 import { getMediaByContentId } from "@/api/media";
 import { getPersonById } from "@/api/people";
 import CastLink from "@/components/cast-link";
+import CelebritiesCarousel from "@/components/celebrities-carousel";
 import PosterCard from "@/components/poster-card";
 import SectionLink from "@/components/section-link";
 import {
@@ -534,20 +535,25 @@ function ContentDetailsComponent() {
               {/* Top Cast Section */}
               <div className="w-full">
                 <SectionLink label="Top Cast" numberOfItems={topCast.length} />
-                {/* Grid 2 Cols 9 Rows */}
-                <div className="my-6 grid grid-cols-2 gap-5">
-                  {topCast.map((actor) => (
-                    <CastLink
-                      key={actor.id}
-                      imgUrl={actor.personProfileImageUrl || ""}
-                      name={actor.person?.name || ""}
-                      character={actor.characterName || ""}
-                    />
-                  ))}
+                {/* Cast Grid  */}
+                <div className="hidden w-full lg:block">
+                  {/* Grid 2 Cols 9 Rows */}
+                  <div className="my-6 grid grid-cols-2 gap-5">
+                    {topCast.map((actor) => (
+                      <CastLink
+                        key={actor.id}
+                        imgUrl={actor.personProfileImageUrl || ""}
+                        name={actor.person?.name || ""}
+                        character={actor.characterName || ""}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-10 block lg:hidden">
+                  <CelebritiesCarousel actors={topCast} />
                 </div>
                 {/* Other Cast Crew Details */}
                 <div className="my-6 flex w-full flex-col">
-                  {/* <Separator className="my-1 w-full bg-black/15" /> */}
                   <div className="my-3 flex flex-col">
                     <Separator className="bg-black/20" />
                     {/* Directors */}
