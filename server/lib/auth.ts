@@ -18,6 +18,7 @@ export const auth: ReturnType<typeof betterAuth> = betterAuth({
         type: "string",
         required: true,
         input: false,
+        defaultValue: "USER",
       },
     },
   },
