@@ -75,15 +75,41 @@ export const getPersonById = async (personId: string) => {
 };
 
 export const useGetPersonById = (personId: string) => {
-  return useQuery({
+  const query = useQuery({
     queryKey: ["people", personId],
-    queryFn: () => getPersonById(personId),
+    queryFn: async () => {
+      const response = await client.api.people[":id"].$get({
+        param: { id: personId },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch person.");
+      }
+
+      const data = await response.json();
+
+      return data;
+    },
   });
+
+  return query;
 };
 
 export const useGetAllPeople = () => {
-  return useQuery({
+  const query = useQuery({
     queryKey: ["people"],
-    queryFn: getPeople,
+    queryFn: async () => {
+      const response = await client.api.people.$get();
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch people.");
+      }
+
+      const data = await response.json();
+
+      return data;
+    },
   });
+
+  return query;
 };

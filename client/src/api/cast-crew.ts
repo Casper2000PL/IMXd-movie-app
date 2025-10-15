@@ -92,25 +92,63 @@ export const deleteCastCrew = async (id: string) => {
 };
 
 export const useGetCastCrew = () => {
-  return useQuery({
+  const query = useQuery({
     queryKey: ["crew"],
-    queryFn: getCastCrew,
+    queryFn: async () => {
+      const response = await client.api.castCrew.$get();
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch crew.");
+      }
+
+      const data = await response.json();
+
+      return data;
+    },
   });
+
+  return query;
 };
 
 export const useGetCastCrewByContentId = (contentId: string) => {
-  return useQuery({
+  const query = useQuery({
     queryKey: ["crew", contentId],
-    queryFn: () => getCastCrewByContentId(contentId),
+    queryFn: async () => {
+      const response = await client.api.castCrew[":contentId"].$get({
+        param: { contentId },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch cast/crew.");
+      }
+
+      const data = await response.json();
+
+      return data;
+    },
     enabled: !!contentId,
   });
+
+  return query;
 };
 
 export const useCreateCastCrew = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: (data: CreateCastCrewForm) => createCastCrew(data),
+  const mutation = useMutation({
+    mutationFn: async (data: CreateCastCrewForm) => {
+      const response = await client.api.castCrew.$post({
+        json: data,
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `HTTP error! status: ${response.status} - ${errorText}`,
+        );
+      }
+      const createdData = await response.json();
+      return createdData;
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["crew"] });
       if (data?.contentId) {
@@ -118,17 +156,32 @@ export const useCreateCastCrew = () => {
       }
     },
   });
+
+  return mutation;
 };
 
-// Hook to delete cast/crew
 export const useDeleteCastCrew = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: (id: string) => deleteCastCrew(id),
+  const mutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await client.api.castCrew[":id"].$delete({
+        param: { id },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `HTTP error! status: ${response.status} - ${errorText}`,
+        );
+      }
+
+      return true;
+    },
     onSuccess: () => {
-      // Invalidate all crew queries
       queryClient.invalidateQueries({ queryKey: ["crew"] });
     },
   });
+
+  return mutation;
 };

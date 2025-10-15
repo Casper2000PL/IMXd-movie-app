@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { client } from "server/src/client";
 import { toast } from "sonner";
 
@@ -103,18 +103,42 @@ export const deleteImageByKey = async (key: string) => {
 
 // TanStack Query Hooks
 export const useMediaByContentId = (contentId: string) => {
-  return useQuery({
-    queryKey: ["media", "content", contentId],
-    queryFn: () => getMediaByContentId(contentId),
-    enabled: !!contentId,
+  const query = useQuery({
+    queryKey: ["media", contentId],
+    queryFn: async () => {
+      const response = await client.api.media.content[":contentId"].$get({
+        param: { contentId },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch media.");
+
+      const data = await response.json();
+
+      return data;
+    },
+
+    // enabled: !!contentId,
   });
+
+  return query;
 };
 
-export const useDeleteImageByKey = () => {
+export const useDeleteImageByKey = (key: string) => {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: deleteImageByKey,
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const response = await client.api.media.image[":key"].$delete({
+        param: { key },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    },
     onSuccess: () => {
       toast.success("Image deleted successfully");
       // Invalidate all media queries to refetch
@@ -124,13 +148,24 @@ export const useDeleteImageByKey = () => {
       toast.error("Failed to delete image");
     },
   });
+
+  return mutation;
 };
 
 export const useCreateMedia = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: createMedia,
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const response = await client.api.media.$post();
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    },
     onSuccess: () => {
       toast.success("Media created successfully");
       // Invalidate all media queries to refetch
@@ -140,14 +175,6 @@ export const useCreateMedia = () => {
       toast.error("Failed to create media");
     },
   });
-};
 
-export const getUserInfo = async () => {
-  const response = await client.api["user-info"].$get();
-  if (response.ok) {
-    const data = await response.json();
-    return data;
-  } else {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
+  return mutation;
 };

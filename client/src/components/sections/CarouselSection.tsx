@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
-import { Content, ContentWithMedia } from "@/api/content";
-import { Media } from "@/api/media";
 import { Link } from "@tanstack/react-router";
 import {
   ChevronRightIcon,
@@ -20,6 +16,7 @@ import {
   CarouselPreviousCustom,
   type CarouselApi,
 } from "../ui/carousel";
+import type { Content, Media, ContentWithMedia } from "shared/dist";
 
 interface CarouselSectionProps {
   content: Content[];
@@ -55,17 +52,14 @@ const CarouselSection = ({ content, media }: CarouselSectionProps) => {
 
       return nextItems;
     },
-    [contentWithMedia.length],
+    [contentWithMedia],
   );
 
-  const updateSideCarousel = useCallback(
-    (currentIndex: number) => {
-      if (sideApi && contentWithMedia.length > 1) {
-        sideApi.scrollTo(0, true);
-      }
-    },
-    [sideApi, contentWithMedia.length],
-  );
+  const updateSideCarousel = useCallback(() => {
+    if (sideApi && contentWithMedia.length > 1) {
+      sideApi.scrollTo(0, true);
+    }
+  }, [sideApi, contentWithMedia.length]);
 
   useEffect(() => {
     if (!mainApi) return;
@@ -73,7 +67,7 @@ const CarouselSection = ({ content, media }: CarouselSectionProps) => {
     const onSelect = () => {
       const newIndex = mainApi.selectedScrollSnap();
       setCurrentMainIndex(newIndex);
-      updateSideCarousel(newIndex);
+      updateSideCarousel();
     };
 
     mainApi.on("select", onSelect);

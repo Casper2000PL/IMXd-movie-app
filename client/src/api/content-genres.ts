@@ -20,13 +20,6 @@ export const getContentGenres = async (contentId: string) => {
   }
 };
 
-export const useGetContentGenres = (contentId: string) => {
-  return useQuery({
-    queryKey: ["content-genres", contentId],
-    queryFn: () => getContentGenres(contentId),
-  });
-};
-
 export const addContentGenre = async (contentId: string, genreId: string) => {
   try {
     const response = await client.api.contentGenres.$post({
@@ -65,29 +58,6 @@ export const addContentGenresBulk = async (
   }
 };
 
-export const useAddContentGenresBulk = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      contentId,
-      genreIds,
-    }: {
-      contentId: string;
-      genreIds: string[];
-    }) => addContentGenresBulk(contentId, genreIds),
-    onSuccess: () => {
-      toast.success("Content added successfully!");
-
-      queryClient.invalidateQueries({ queryKey: ["content-genres"] });
-    },
-    onError: (error) => {
-      console.error("Error updating content:", error);
-      toast.error("Failed to update content. Please try again.");
-    },
-  });
-};
-
 export const updateContentGenres = async (
   contentId: string,
   genreIds: string[],
@@ -109,16 +79,91 @@ export const updateContentGenres = async (
   }
 };
 
-export const useUpdateContentGenres = () => {
+// Tanstack Hooks
+
+export const useGetContentGenres = (contentId: string) => {
+  const query = useQuery({
+    queryKey: ["content-genres", contentId],
+    queryFn: async () => {
+      const response = await client.api.contentGenres[":id"].$get({
+        param: { id: contentId },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch content genres.");
+      }
+
+      const data = await response.json();
+
+      return data;
+    },
+  });
+
+  return query;
+};
+
+export const useAddContentGenresBulk = () => {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
+
+  const mutation = useMutation({
+    mutationFn: async ({
       contentId,
       genreIds,
     }: {
       contentId: string;
       genreIds: string[];
-    }) => updateContentGenres(contentId, genreIds),
+    }) => {
+      const response = await client.api.contentGenres.bulk.$post({
+        json: { contentId, genreIds },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error response: ", errorData);
+        throw new Error("Failed to add content genres");
+      }
+
+      const data = await response.json();
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Content added successfully!");
+
+      queryClient.invalidateQueries({ queryKey: ["content-genres"] });
+    },
+    onError: (error) => {
+      console.error("Error updating content:", error);
+      toast.error("Failed to update content. Please try again.");
+    },
+  });
+
+  return mutation;
+};
+
+export const useUpdateContentGenres = () => {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: async ({
+      contentId,
+      genreIds,
+    }: {
+      contentId: string;
+      genreIds: string[];
+    }) => {
+      const response = await client.api.contentGenres[":id"].$put({
+        param: { id: contentId },
+        json: { genreIds },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error response: ", errorData);
+        throw new Error("Failed to update content genres");
+      }
+
+      const data = await response.json();
+      return data;
+    },
     onSuccess: (_, variables) => {
       toast.success("Genres updated successfully!");
       queryClient.invalidateQueries({
@@ -130,4 +175,6 @@ export const useUpdateContentGenres = () => {
       toast.error("Failed to update genres. Please try again.");
     },
   });
+
+  return mutation;
 };

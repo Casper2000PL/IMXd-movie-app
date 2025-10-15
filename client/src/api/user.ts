@@ -5,7 +5,7 @@ import z from "zod";
 export const getUserById = async (id: string) => {
   try {
     const response = await client.api.user[":id"].$get({
-      param: { id }, // Pass as param object, not query
+      param: { id },
     });
 
     if (response.ok) {
@@ -24,7 +24,6 @@ export const updateUserSchema = z.object({
   name: z.string().min(2).max(20),
 });
 
-// In your frontend API file
 export const updateUser = async (
   id: string,
   formData: z.infer<typeof updateUserSchema>,
@@ -76,7 +75,6 @@ export const deleteUserImage = async (id: string) => {
       throw new Error("Failed to delete user image from AWS");
     }
 
-    // Only proceed to update the user if AWS deletion was successful
     console.log("AWS image deletion successful");
 
     const response = await client.api.user[":id"].$put({

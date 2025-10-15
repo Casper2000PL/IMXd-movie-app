@@ -120,14 +120,39 @@ export const updateContent = async (
 export const useUpdateContent = () => {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: ({
+  const mutation = useMutation({
+    mutationFn: async ({
       id,
       formData,
     }: {
       id: string;
       formData: CreateContentForm;
-    }) => updateContent(id, formData),
+    }) => {
+      const response = await client.api.content[":id"].$patch({
+        param: { id },
+        form: {
+          title: formData.title,
+          type: formData.type,
+          description: formData.description,
+          releaseDate: formData.releaseDate,
+          runtime: formData.runtime,
+          language: formData.language,
+          status: formData.status,
+          numberOfSeasons: formData.numberOfSeasons,
+          numberOfEpisodes: formData.numberOfEpisodes,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `HTTP error! status: ${response.status} - ${errorText}`,
+        );
+      }
+
+      const updatedContent = await response.json();
+      return updatedContent;
+    },
     onSuccess: (variables) => {
       toast.success("Content updated successfully!");
 
@@ -140,4 +165,6 @@ export const useUpdateContent = () => {
       toast.error("Failed to update content. Please try again.");
     },
   });
+
+  return mutation;
 };

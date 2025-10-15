@@ -15,8 +15,20 @@ export const getGenres = async () => {
 };
 
 export const useGetGenres = () => {
-  return useQuery({
+  const query = useQuery({
     queryKey: ["genres"],
-    queryFn: getGenres,
+    queryFn: async () => {
+      const response = await client.api.genres.$get();
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch genres.");
+      }
+
+      const data = await response.json();
+
+      return data;
+    },
   });
+
+  return query;
 };
