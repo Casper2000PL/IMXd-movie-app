@@ -18,5 +18,25 @@ export const authMiddleware = createMiddleware<HonoEnv>(async (c, next) => {
 
   c.set("user", session.user as User);
   c.set("session", session.session);
-  return next();
+  return await next();
 });
+
+export const authAdminMiddleware = createMiddleware<HonoEnv>(
+  async (c, next) => {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+
+    if (!session) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const user = session.user as User;
+
+    if (user.role !== "ADMIN") {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+
+    c.set("user", session.user as User);
+    c.set("session", session.session);
+    return await next();
+  }
+);

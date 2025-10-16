@@ -6,11 +6,17 @@ import { Hono } from "hono";
 import { S3 } from "server/lib/s3client";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { createMediaSchema } from "@server/schemas/media";
+import { authMiddleware } from "@server/middleware";
 
 export const mediaRouter = new Hono()
   .get("/", async (c) => {
-    const mediaData = await db.select().from(media);
-    return c.json(mediaData);
+    try {
+      const mediaData = await db.select().from(media);
+      return c.json(mediaData);
+    } catch (error) {
+      console.error("Error fetching media:", error);
+      return c.json({ error: "Failed to fetch media" }, 500);
+    }
   })
   .get("/:id", async (c) => {
     try {

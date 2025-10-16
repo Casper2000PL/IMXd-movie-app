@@ -1,14 +1,22 @@
 import { zValidator } from "@hono/zod-validator";
+import { authMiddleware } from "@server/middleware";
 import { createContentSchema } from "@server/schemas/content";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "server/db";
 import { content } from "server/db/schemas/system-schema";
+import { type AuthType } from "server/lib/auth";
 
-export const contentRouter = new Hono()
-  .get("/", async (c) => {
-    const contentData = await db.select().from(content);
-    return c.json(contentData);
+export const contentRouter = new Hono<{ Variables: AuthType }>()
+  // routes with authMiddleware has to be at the top
+  .get("/", authMiddleware, async (c) => {
+    try {
+      const contentData = await db.select().from(content);
+      return c.json(contentData);
+    } catch (error) {
+      console.error("Error fetching content:", error);
+      return c.json({ error: "Failed to fetch content" }, 500);
+    }
   })
   .get("/:id", async (c) => {
     try {
