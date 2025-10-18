@@ -1,8 +1,10 @@
 import { createContent } from "@/api/content";
 import AddContentForm from "@/components/add-content-form";
+import { authClient } from "@/lib/auth-client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
+import type { User } from "shared";
 import { toast } from "sonner";
 import z from "zod";
 
@@ -39,8 +41,6 @@ export const Route = createFileRoute("/add-content")({
 });
 
 function RouteComponent() {
-  const navigate = useNavigate();
-
   const addContentForm = useForm<FormData>({
     resolver: zodResolver(addContentSchema),
     defaultValues: {
@@ -55,6 +55,17 @@ function RouteComponent() {
       numberOfEpisodes: "",
     },
   });
+
+  const navigate = useNavigate();
+
+  const { data: session } = authClient.useSession();
+  const user = session?.user as User;
+  const isNotAdmin = !user || user.role !== "ADMIN";
+
+  if (isNotAdmin) {
+    navigate({ to: "/" });
+    return null;
+  }
 
   const onSubmit = async (values: z.infer<typeof addContentSchema>) => {
     try {

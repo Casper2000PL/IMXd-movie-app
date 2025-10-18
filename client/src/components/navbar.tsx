@@ -42,7 +42,7 @@ const Navbar = () => {
               <NavButton>
                 {user.image ? (
                   <img
-                    src={user.image}
+                    src={encodeURI(user.image)}
                     alt={user.name.charAt(0)}
                     className="size-6 rounded-full object-cover object-top"
                   />

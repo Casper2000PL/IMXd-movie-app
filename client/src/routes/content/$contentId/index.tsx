@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/carousel";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { authClient } from "@/lib/auth-client";
 import { convertToEmbedUrl } from "@/utils/convertToEmbedUrl";
 import { extractYearFromDate, formatRuntime } from "@/utils/dateUtils";
 import { DialogClose } from "@radix-ui/react-dialog";
@@ -32,6 +33,7 @@ import {
   TriangleIcon,
   XIcon,
 } from "lucide-react";
+import type { User } from "shared/src/types";
 
 export const Route = createFileRoute("/content/$contentId/")({
   loader: async ({ params }) => {
@@ -78,6 +80,10 @@ export const Route = createFileRoute("/content/$contentId/")({
 });
 
 function ContentDetailsComponent() {
+  const { data: session } = authClient.useSession();
+  const user = session?.user as User;
+  console.log("User info: ", user);
+
   const { content, media, castCrew, genres } = Route.useLoaderData();
   const { contentId } = Route.useParams();
 
@@ -484,23 +490,23 @@ function ContentDetailsComponent() {
               {/* Add to watchlist button */}
               <div className="mt-4 flex w-full flex-2 items-center justify-center">
                 <div className="flex w-full flex-col gap-4">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-custom-yellow-100 h-8 w-1 rounded-full" />
-                    <div>
-                      <p className="font-sans text-xs font-semibold tracking-widest text-white">
-                        COMING SOON
-                      </p>
-                      <p className="mt-0.5 font-sans text-xs font-normal text-white">
-                        Releases September 19, 2025
-                      </p>
+                  {content.status === "upcoming" && (
+                    <div className="flex items-center gap-2">
+                      <div className="bg-custom-yellow-100 h-8 w-1 rounded-full" />
+                      <div>
+                        <p className="mt-0.5 font-sans text-xs font-normal text-white">
+                          {content.releaseDate}
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   <button className="bg-custom-yellow-100 hover:bg-custom-yellow-300 flex w-full cursor-pointer items-center gap-0.5 rounded-full px-3 py-2 transition-all duration-200">
                     <PlusIcon className="text-black" />
                     <div className="ml-2">
                       <p className="text-left font-sans text-sm font-semibold text-black">
                         Add to my Watchlist
                       </p>
+                      {/* TODO: Replace with actual number of users who added to watchlist */}
                       <p className="text-left font-sans text-xs font-medium text-black">
                         Added by 9.5k users
                       </p>
@@ -513,28 +519,37 @@ function ContentDetailsComponent() {
         </div>
       </div>
       {/* Second Section */}
-      <div className="bg-custom-yellow-100 flex w-full justify-center">
-        <div className="flex max-w-7xl items-center py-2">
-          <Link
-            to="/content/$contentId/settings"
-            params={{ contentId }}
-            className="flex items-center gap-3 rounded-full px-5 py-2 transition-all duration-200 hover:bg-white/25 active:bg-white/40"
-          >
-            <p className="font-roboto text-xl font-medium">
-              Open settings to edit
-            </p>
-            <SettingsIcon className="size-6 text-black" strokeWidth={2} />
-          </Link>
+      {user !== undefined && user.role === "ADMIN" && (
+        <div className="bg-custom-yellow-100 flex w-full justify-center">
+          <div className="flex max-w-7xl items-center py-2">
+            <Link
+              to="/content/$contentId/settings"
+              params={{ contentId }}
+              className="flex items-center gap-3 rounded-full px-5 py-2 transition-all duration-200 hover:bg-white/25 active:bg-white/40"
+            >
+              <p className="font-roboto text-xl font-medium">
+                Open settings to edit
+              </p>
+              <SettingsIcon className="size-6 text-black" strokeWidth={2} />
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
+
       {/* White Section */}
       <div className="w-full bg-white">
         <div className="mx-auto h-full w-full max-w-7xl py-6">
           <div className="flex min-h-[300px] w-full gap-14 px-2 xl:px-0">
-            <div className="flex w-full flex-7 flex-col border-2 border-blue-500">
+            <div className="flex w-full flex-7 flex-col">
               {/* Top Cast Section */}
               <div className="w-full">
-                <SectionLink label="Top Cast" numberOfItems={topCast.length} />
+                <div className="w-fit">
+                  <SectionLink
+                    label="Top Cast"
+                    numberOfItems={topCast.length}
+                  />
+                </div>
+
                 {/* Cast Grid  */}
                 <div className="hidden w-full lg:block">
                   {/* Grid 2 Cols 9 Rows */}

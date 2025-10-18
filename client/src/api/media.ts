@@ -104,7 +104,7 @@ export const deleteImageByKey = async (key: string) => {
 // TanStack Query Hooks
 export const useMediaByContentId = (contentId: string) => {
   const query = useQuery({
-    queryKey: ["media", contentId],
+    queryKey: ["media", "content", contentId],
     queryFn: async () => {
       const response = await client.api.media.content[":contentId"].$get({
         param: { contentId },
@@ -117,64 +117,65 @@ export const useMediaByContentId = (contentId: string) => {
       return data;
     },
 
-    // enabled: !!contentId,
+    enabled: !!contentId,
   });
 
   return query;
 };
 
-export const useDeleteImageByKey = (key: string) => {
+export const useDeleteImageByKey = () => {
   const queryClient = useQueryClient();
-
   const mutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (key: string) => {
       const response = await client.api.media.image[":key"].$delete({
         param: { key },
       });
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const data = await response.json();
       return data;
     },
     onSuccess: () => {
       toast.success("Image deleted successfully");
-      // Invalidate all media queries to refetch
       queryClient.invalidateQueries({ queryKey: ["media"] });
     },
     onError: () => {
       toast.error("Failed to delete image");
     },
   });
-
   return mutation;
 };
 
 export const useCreateMedia = () => {
   const queryClient = useQueryClient();
-
   const mutation = useMutation({
-    mutationFn: async () => {
-      const response = await client.api.media.$post();
-
+    mutationFn: async (params: {
+      contentId: string;
+      formData: {
+        title: string;
+        fileUrl: string;
+        fileSize: number;
+      };
+      type: string;
+      mediaCategory: string;
+    }) => {
+      const response = await client.api.media.$post({
+        json: params,
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const data = await response.json();
       return data;
     },
     onSuccess: () => {
       toast.success("Media created successfully");
-      // Invalidate all media queries to refetch
       queryClient.invalidateQueries({ queryKey: ["media"] });
     },
     onError: () => {
       toast.error("Failed to create media");
     },
   });
-
   return mutation;
 };

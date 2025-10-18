@@ -42,7 +42,7 @@ function RouteComponent() {
 
   const isOwner = session.data?.user?.id === profileId;
 
-  if (profileId) console.log("Profile ID from URL:", profileId);
+  console.log("Profile Info: ", profileInfo.image);
 
   return (
     <div className="w-full bg-gray-800">
@@ -95,7 +95,7 @@ function RouteComponent() {
               <div className="size-20 lg:size-35">
                 {profileInfo.image ? (
                   <img
-                    src={profileInfo.image}
+                    src={encodeURI(profileInfo.image)}
                     alt="Profile Picture"
                     className="h-full w-full rounded-full object-cover object-top"
                   />

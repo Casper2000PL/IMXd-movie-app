@@ -11,11 +11,14 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { authClient } from "@/lib/auth-client";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "@tanstack/react-router";
 import { createFileRoute } from "@tanstack/react-router";
 import { Loader, Trash2Icon, UploadIcon, User2Icon } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import type { User } from "shared";
 import { toast } from "sonner";
 import z from "zod";
 
@@ -241,6 +244,17 @@ function RouteComponent() {
 
     console.log("Created person:", createdPerson);
   };
+
+  const navigate = useNavigate();
+
+  const { data: session } = authClient.useSession();
+  const user = session?.user as User;
+  const isNotAdmin = !user || user.role !== "ADMIN";
+
+  if (isNotAdmin) {
+    navigate({ to: "/" });
+    return null;
+  }
 
   return (
     <div className="mx-auto flex h-full w-full max-w-4xl px-4 py-10">

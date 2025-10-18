@@ -1,4 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
+import { authAdminMiddleware } from "@server/middleware";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "server/db";
@@ -15,65 +16,37 @@ const updateContentGenresSchema = z.object({
 });
 
 export const contentGenresRouter = new Hono()
-  .get("/:id", async (c) => {
-    try {
-      const contentId = c.req.param("id");
+  .post(
+    "/",
+    authAdminMiddleware,
+    zValidator("json", contentGenresSchema),
+    async (c) => {
+      try {
+        const { contentId, genreId } = await c.req.json();
 
-      const contentGenresData = await db
-        .select()
-        .from(contentGenres)
-        .where(eq(contentGenres.contentId, contentId));
+        if (!contentId || !genreId) {
+          return c.json({ error: "contentId and genre are required" }, 400);
+        }
 
-      const genresData = await db.select().from(genres);
+        const newGenre = await db
+          .insert(contentGenres)
+          .values({ contentId, genreId })
+          .returning();
 
-      const genreIds = contentGenresData.map((cg) => cg.genreId);
-
-      const contentGenresList = genresData
-        .filter((genre) => genreIds.includes(genre.id))
-        .map((genre) => ({
-          id: genre.id,
-          name: genre.name,
-          contentId: contentId,
-        }));
-
-      return c.json(contentGenresList, 200);
-    } catch (error) {
-      console.error("Error fetching genres by ID:", error);
-      return c.json(
-        {
-          error: "Failed to fetch genres",
-          details: error,
-        },
-        500
-      );
-    }
-  })
-  .post("/", zValidator("json", contentGenresSchema), async (c) => {
-    try {
-      const { contentId, genreId } = await c.req.json();
-
-      if (!contentId || !genreId) {
-        return c.json({ error: "contentId and genre are required" }, 400);
+        return c.json(newGenre[0], 201);
+      } catch (error) {
+        console.error("Error creating genre:", error);
+        return c.json(
+          {
+            error: "Failed to create genre",
+            details: error,
+          },
+          500
+        );
       }
-
-      const newGenre = await db
-        .insert(contentGenres)
-        .values({ contentId, genreId })
-        .returning();
-
-      return c.json(newGenre[0], 201);
-    } catch (error) {
-      console.error("Error creating genre:", error);
-      return c.json(
-        {
-          error: "Failed to create genre",
-          details: error,
-        },
-        500
-      );
     }
-  })
-  .post("/bulk", async (c) => {
+  )
+  .post("/bulk", authAdminMiddleware, async (c) => {
     const { contentId, genreIds } = await c.req.json();
 
     // Validate input
@@ -105,60 +78,98 @@ export const contentGenresRouter = new Hono()
       return c.json({ error: "Failed to add genres" }, 500);
     }
   })
-  .put("/:id", zValidator("json", updateContentGenresSchema), async (c) => {
-    const contentId = c.req.param("id");
-    const { genreIds } = await c.req.json();
+  .put(
+    "/:id",
+    authAdminMiddleware,
+    zValidator("json", updateContentGenresSchema),
+    async (c) => {
+      const contentId = c.req.param("id");
+      const { genreIds } = await c.req.json();
 
-    if (!contentId) {
-      return c.json({ error: "contentId is required" }, 400);
-    }
+      if (!contentId) {
+        return c.json({ error: "contentId is required" }, 400);
+      }
 
-    try {
-      // Use a transaction to ensure atomicity
-      await db.transaction(async (tx) => {
-        // Delete all existing genres for this content
-        await tx
-          .delete(contentGenres)
+      try {
+        // Use a transaction to ensure atomicity
+        await db.transaction(async (tx) => {
+          // Delete all existing genres for this content
+          await tx
+            .delete(contentGenres)
+            .where(eq(contentGenres.contentId, contentId));
+
+          // Insert new genres if any
+          if (genreIds.length > 0) {
+            const contentGenresData = genreIds.map((genreId: string) => ({
+              contentId,
+              genreId,
+            }));
+
+            await tx
+              .insert(contentGenres)
+              .values(contentGenresData)
+              .onConflictDoNothing();
+          }
+        });
+
+        // Fetch and return updated genres
+        const contentGenresData = await db
+          .select()
+          .from(contentGenres)
           .where(eq(contentGenres.contentId, contentId));
 
-        // Insert new genres if any
-        if (genreIds.length > 0) {
-          const contentGenresData = genreIds.map((genreId: string) => ({
-            contentId,
-            genreId,
+        const genresData = await db.select().from(genres);
+        const updatedGenreIds = contentGenresData.map((cg) => cg.genreId);
+
+        const contentGenresList = genresData
+          .filter((genre) => updatedGenreIds.includes(genre.id))
+          .map((genre) => ({
+            id: genre.id,
+            name: genre.name,
+            contentId: contentId,
           }));
 
-          await tx
-            .insert(contentGenres)
-            .values(contentGenresData)
-            .onConflictDoNothing();
-        }
-      });
+        return c.json({
+          success: true,
+          count: contentGenresList.length,
+          data: contentGenresList,
+        });
+      } catch (error) {
+        console.error("Update genres error:", error);
+        return c.json({ error: "Failed to update genres" }, 500);
+      }
+    }
+  )
+  .get("/:id", async (c) => {
+    try {
+      const contentId = c.req.param("id");
 
-      // Fetch and return updated genres
       const contentGenresData = await db
         .select()
         .from(contentGenres)
         .where(eq(contentGenres.contentId, contentId));
 
       const genresData = await db.select().from(genres);
-      const updatedGenreIds = contentGenresData.map((cg) => cg.genreId);
+
+      const genreIds = contentGenresData.map((cg) => cg.genreId);
 
       const contentGenresList = genresData
-        .filter((genre) => updatedGenreIds.includes(genre.id))
+        .filter((genre) => genreIds.includes(genre.id))
         .map((genre) => ({
           id: genre.id,
           name: genre.name,
           contentId: contentId,
         }));
 
-      return c.json({
-        success: true,
-        count: contentGenresList.length,
-        data: contentGenresList,
-      });
+      return c.json(contentGenresList, 200);
     } catch (error) {
-      console.error("Update genres error:", error);
-      return c.json({ error: "Failed to update genres" }, 500);
+      console.error("Error fetching genres by ID:", error);
+      return c.json(
+        {
+          error: "Failed to fetch genres",
+          details: error,
+        },
+        500
+      );
     }
   });

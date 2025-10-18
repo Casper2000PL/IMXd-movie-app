@@ -22,10 +22,11 @@ import AddMemberForm from "@/components/add-member-form";
 import AddTrailerForm from "@/components/add-trailer-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   CameraIcon,
   ImagesIcon,
@@ -36,6 +37,7 @@ import {
 import { useCallback, useMemo, useState } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
+import type { User } from "shared";
 import { toast } from "sonner";
 import z from "zod";
 
@@ -79,11 +81,13 @@ type FormCrewValues = z.infer<typeof formCrewSchema>;
 type FormGenres = {
   genre: string[];
 };
+
 function SettingsComponent() {
   const queryClient = useQueryClient();
 
   const { content } = Route.useLoaderData();
   const { contentId } = Route.useParams();
+  const navigate = useNavigate();
 
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
 
@@ -322,13 +326,20 @@ function SettingsComponent() {
   };
 
   const onSubmitGenres = (values: FormGenres) => {
-    console.log("Submitting genres:", values);
-
     updateGenresMutation.mutate({
       contentId,
       genreIds: values.genre,
     });
   };
+
+  const { data: session } = authClient.useSession();
+  const user = session?.user as User;
+  const isNotAdmin = !user || user.role !== "ADMIN";
+
+  if (isNotAdmin) {
+    navigate({ to: "/" });
+    return null;
+  }
 
   if (mediaLoading) {
     return (

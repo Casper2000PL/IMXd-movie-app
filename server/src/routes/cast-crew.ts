@@ -1,4 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
+import { authAdminMiddleware } from "@server/middleware";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "server/db";
@@ -14,6 +15,65 @@ const createCastCrewSchema = z.object({
 });
 
 export const castCrewRouter = new Hono()
+  .post(
+    "/",
+    authAdminMiddleware,
+    zValidator("json", createCastCrewSchema),
+    async (c) => {
+      try {
+        const validatedData = c.req.valid("json");
+        console.log("Backend - Creating cast/crew:", validatedData);
+
+        const newCastCrew = await db
+          .insert(castCrew)
+          .values({
+            contentId: validatedData.contentId,
+            personId: validatedData.personId,
+            role: validatedData.role,
+            characterName: validatedData.characterName,
+            creditOrder: validatedData.creditOrder,
+          })
+          .returning();
+
+        console.log("Backend - Cast/crew created:", newCastCrew);
+        return c.json(newCastCrew[0], 201);
+      } catch (error) {
+        console.error("Error creating cast/crew:", error);
+        return c.json(
+          {
+            error: "Failed to create cast/crew",
+            details: error,
+          },
+          500
+        );
+      }
+    }
+  )
+  .delete("/:id", authAdminMiddleware, async (c) => {
+    try {
+      const id = c.req.param("id");
+
+      const deleted = await db
+        .delete(castCrew)
+        .where(eq(castCrew.id, id))
+        .returning();
+
+      if (deleted.length === 0) {
+        return c.json({ error: "Cast/crew not found" }, 404);
+      }
+
+      return c.json({ message: "Cast/crew deleted successfully" }, 200);
+    } catch (error) {
+      console.error("Error deleting cast/crew:", error);
+      return c.json(
+        {
+          error: "Failed to delete cast/crew",
+          details: error,
+        },
+        500
+      );
+    }
+  })
   .get("/", async (c) => {
     try {
       const crewData = await db
@@ -72,60 +132,6 @@ export const castCrewRouter = new Hono()
       return c.json(
         {
           error: "Failed to fetch crew data",
-          details: error,
-        },
-        500
-      );
-    }
-  })
-  .post("/", zValidator("json", createCastCrewSchema), async (c) => {
-    try {
-      const validatedData = c.req.valid("json");
-      console.log("Backend - Creating cast/crew:", validatedData);
-
-      const newCastCrew = await db
-        .insert(castCrew)
-        .values({
-          contentId: validatedData.contentId,
-          personId: validatedData.personId,
-          role: validatedData.role,
-          characterName: validatedData.characterName,
-          creditOrder: validatedData.creditOrder,
-        })
-        .returning();
-
-      console.log("Backend - Cast/crew created:", newCastCrew);
-      return c.json(newCastCrew[0], 201);
-    } catch (error) {
-      console.error("Error creating cast/crew:", error);
-      return c.json(
-        {
-          error: "Failed to create cast/crew",
-          details: error,
-        },
-        500
-      );
-    }
-  })
-  .delete("/:id", async (c) => {
-    try {
-      const id = c.req.param("id");
-
-      const deleted = await db
-        .delete(castCrew)
-        .where(eq(castCrew.id, id))
-        .returning();
-
-      if (deleted.length === 0) {
-        return c.json({ error: "Cast/crew not found" }, 404);
-      }
-
-      return c.json({ message: "Cast/crew deleted successfully" }, 200);
-    } catch (error) {
-      console.error("Error deleting cast/crew:", error);
-      return c.json(
-        {
-          error: "Failed to delete cast/crew",
           details: error,
         },
         500
