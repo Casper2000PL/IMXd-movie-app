@@ -152,29 +152,35 @@ export const useCreateMedia = () => {
   const mutation = useMutation({
     mutationFn: async (params: {
       contentId: string;
-      formData: {
-        title: string;
-        fileUrl: string;
-        fileSize: number;
-      };
-      type: string;
+      title: string;
+      fileUrl: string;
+      fileSize: string;
       mediaCategory: string;
+      type: string;
     }) => {
+      console.log("Sending to backend:", params);
+
+      // Backend expects FORM data, not JSON!
       const response = await client.api.media.$post({
-        json: params,
+        form: params, // Changed from 'json' to 'form'
       });
+
       if (!response.ok) {
+        const errorData = await response.text();
+        console.error("Server response:", errorData);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
-      return data;
+      return await response.json();
     },
-    onSuccess: () => {
+    onSuccess: (variables) => {
       toast.success("Media created successfully");
-      queryClient.invalidateQueries({ queryKey: ["media"] });
+      queryClient.invalidateQueries({
+        queryKey: ["media", "content", variables.contentId],
+      });
     },
-    onError: () => {
+    onError: (error) => {
       toast.error("Failed to create media");
+      console.error("Error creating media:", error);
     },
   });
   return mutation;

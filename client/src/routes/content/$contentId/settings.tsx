@@ -107,7 +107,6 @@ function SettingsComponent() {
   const createCastCrewMutation = useCreateCastCrew();
   const deleteCastCrewMutation = useDeleteCastCrew();
   const createMediaMutation = useCreateMedia();
-  // const addGenresMutation = useAddContentGenresBulk();
   const updateGenresMutation = useUpdateContentGenres();
 
   const trailers = media.filter((m) => m.mediaCategory === "trailer");
@@ -291,16 +290,28 @@ function SettingsComponent() {
   };
 
   const onSubmitTrailer = (values: FormTrailerData) => {
-    createMediaMutation.mutate({
-      contentId,
-      formData: {
+    console.log("Form values:", values);
+
+    createMediaMutation.mutate(
+      {
+        contentId,
         title: values.title,
         fileUrl: values.youtubeUrl,
-        fileSize: 0,
+        fileSize: "0",
+        mediaCategory: "trailer",
+        type: "video",
       },
-      type: "video",
-      mediaCategory: "trailer",
-    });
+      {
+        onSuccess: () => {
+          formTrailer.reset();
+          toast.success("Trailer added successfully");
+        },
+        onError: (error) => {
+          console.error("Trailer creation error:", error);
+          toast.error("Failed to add trailer");
+        },
+      },
+    );
   };
 
   const onSubmitCrew = (values: FormCrewValues) => {

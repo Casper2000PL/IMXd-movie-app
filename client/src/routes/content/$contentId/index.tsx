@@ -5,6 +5,7 @@ import { getMediaByContentId } from "@/api/media";
 import { getPersonById } from "@/api/people";
 import CastLink from "@/components/cast-link";
 import CelebritiesCarousel from "@/components/celebrities-carousel";
+import ImageGallery from "@/components/image-gallery";
 import PosterCard from "@/components/poster-card";
 import SectionLink from "@/components/section-link";
 import {
@@ -537,10 +538,18 @@ function ContentDetailsComponent() {
       )}
 
       {/* White Section */}
-      <div className="w-full bg-white">
+      <div className="w-full bg-white px-5">
         <div className="mx-auto h-full w-full max-w-7xl py-6">
           <div className="flex min-h-[300px] w-full gap-14 px-2 xl:px-0">
-            <div className="flex w-full flex-7 flex-col">
+            <div className="flex w-full flex-7 flex-col gap-y-15">
+              {/* Photos Section */}
+              <div className="w-full">
+                <div className="w-fit">
+                  <SectionLink label="Photos" numberOfItems={images.length} />
+                </div>
+                {/* Image gallery */}
+                <ImageGallery images={galleryImages} />
+              </div>
               {/* Top Cast Section */}
               <div className="w-full">
                 <div className="w-fit">
