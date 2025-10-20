@@ -107,8 +107,11 @@ function ContentDetailsComponent() {
     (m) => m.mediaCategory === "gallery_image",
   );
 
+  const carouselImages = [...galleryImages, ...postersImages];
+
   return (
     <div className="relative w-full">
+      {/* Dark Section */}
       <div className="relative min-h-screen w-full">
         {/* Background Image Layer */}
         <div
@@ -130,20 +133,20 @@ function ContentDetailsComponent() {
         />
 
         {/* Content Layer */}
-        <div className="relative z-10 mx-auto w-full max-w-7xl py-10">
+        <div className="xs:px-2 relative z-10 mx-auto w-full max-w-7xl px-1 py-10 sm:px-4 md:px-8">
           {/* Text */}
           <div className="flex w-full justify-between">
             <div>
-              <h1 className="font-roboto text-5xl text-white">
+              <h1 className="font-roboto text-4xl text-white sm:text-5xl">
                 {content.title}
               </h1>
-              <div className="mt-1 flex items-center gap-[6px] font-sans text-sm text-stone-400">
+              <div className="mt-1 flex items-center gap-[6px] font-sans text-sm text-white/70">
                 <span>{extractYearFromDate(content.releaseDate)}</span>
                 <div className="bg-muted-foreground size-[3px] rounded-full" />
                 <span>{content.runtime && formatRuntime(content.runtime)}</span>
               </div>
             </div>
-            <div className="flex gap-1.5">
+            <div className="hidden gap-1.5 lg:flex">
               {/* rating */}
               <div className="flex flex-col items-center gap-0.5">
                 <p className="text-center font-sans text-sm font-semibold tracking-wider text-stone-400">
@@ -197,8 +200,10 @@ function ContentDetailsComponent() {
 
           {/* Media */}
           <div className="mt-3 w-full">
-            <div className="flex h-100 w-full gap-1">
-              <div className="flex-1">
+            {/* 366 224 lg:max-h-[600px] lg:min-h-[224px]*/}
+            <div className="max-xs:max-h-[400px] max-xs:min-h-[250px] xs:max-h-[600px] xs:min-h-[300px] flex w-full gap-1 sm:max-h-[600px] sm:min-h-[300px]">
+              {/* Poster Card */}
+              <div className="hidden flex-1 sm:flex">
                 {postersImages.length > 0 ? (
                   <Dialog>
                     <DialogTrigger asChild>
@@ -269,6 +274,7 @@ function ContentDetailsComponent() {
                   </div>
                 )}
               </div>
+              {/* Trailer frame */}
               <div className="flex-3">
                 {trailers.length > 0 ? (
                   <iframe
@@ -286,7 +292,7 @@ function ContentDetailsComponent() {
                   </div>
                 )}
               </div>
-              <div className="flex flex-1 flex-col gap-1">
+              <div className="hidden flex-1 flex-col gap-1 lg:flex">
                 {/* videos button */}
                 <Link
                   to="/"
@@ -304,8 +310,8 @@ function ContentDetailsComponent() {
                     <button className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-4 rounded-md bg-white/10 transition-all duration-200 hover:bg-white/25">
                       <ImageIcon className="size-8 text-white" />
                       <p className="font-sans text-sm font-semibold text-white">
-                        <span>{images.length}</span>{" "}
-                        {images.length === 1 ? "IMAGE" : "IMAGES"}
+                        <span>{carouselImages.length}</span>{" "}
+                        {carouselImages.length === 1 ? "IMAGE" : "IMAGES"}
                       </p>
                     </button>
                   </DialogTrigger>
@@ -324,7 +330,7 @@ function ContentDetailsComponent() {
                         }}
                       >
                         <CarouselContent className="m-0 flex h-full w-full p-0">
-                          {images.map((image, index) => (
+                          {carouselImages.map((image, index) => (
                             <CarouselItem key={index} className="w-full p-0">
                               <div className="flex h-full w-full flex-col gap-5">
                                 <div className="flex w-full items-center justify-between px-2">
@@ -360,28 +366,98 @@ function ContentDetailsComponent() {
                 </Dialog>
               </div>
             </div>
+            <div className="mt-2 flex gap-1 lg:hidden">
+              <Link
+                to="/"
+                className="flex flex-1 items-center justify-center gap-4 rounded-full bg-white/10 py-3 transition-all duration-200 hover:bg-white/25"
+              >
+                <ClapperboardIcon className="size-4 text-white" />
+                <p className="font-sans text-sm font-semibold text-white">
+                  <span>{videos.length}</span>{" "}
+                  {videos.length === 1 ? "VIDEO" : "VIDEOS"}
+                </p>
+              </Link>
+              <Link
+                to="/"
+                className="flex flex-1 items-center justify-center gap-4 rounded-full bg-white/10 transition-all duration-200 hover:bg-white/25"
+              >
+                <ImageIcon className="size-4 text-white" />
+                <p className="font-sans text-sm font-semibold text-white">
+                  <span>{carouselImages.length}</span>{" "}
+                  {carouselImages.length === 1 ? "IMAGE" : "IMAGES"}
+                </p>
+              </Link>
+            </div>
           </div>
 
           {/* Info */}
           <div className="flex w-full flex-col">
             <div className="flex w-full gap-12">
               <div className="w-full flex-4">
-                {/* Genres Badges */}
-                <div className="my-4 flex w-full gap-3">
-                  {genres.map((genre) => (
-                    <Link
-                      to="/"
-                      key={genre.id}
-                      className="rounded-full border-1 border-stone-300 px-3 py-0.5 font-sans text-sm text-white hover:bg-white/10"
-                    >
-                      {genre.name}
-                    </Link>
-                  ))}
+                <div className="mt-4 flex gap-4">
+                  <div className="hidden max-h-44.5 min-h-35 max-w-30 min-w-23.75 max-sm:flex">
+                    <PosterCard
+                      poster={postersImages[0].fileUrl}
+                      withRibbon
+                      className="rounded-xl! rounded-tl-none!"
+                      classNameImg="rounded-xl! rounded-tl-none!"
+                    />
+                  </div>
+                  <div>
+                    {/* Genres Badges */}
+                    <div className="my-4 flex w-full flex-1 gap-3">
+                      {genres.map((genre) => (
+                        <Link
+                          to="/"
+                          key={genre.id}
+                          className="rounded-full border-1 border-stone-300 px-3 py-0.5 font-sans text-sm text-white hover:bg-white/10"
+                        >
+                          {genre.name}
+                        </Link>
+                      ))}
+                    </div>
+                    {/* Description */}
+                    <div className="font-medium text-white">
+                      {content.description}
+                    </div>
+                    <div className="mt-4 mb-1 flex items-center gap-2 lg:hidden">
+                      <button className="flex cursor-pointer justify-between rounded-full px-4 py-1 transition-all duration-200 hover:bg-white/10">
+                        <div className="flex items-center gap-1.5">
+                          <StarIcon
+                            className="size-5 text-yellow-500"
+                            fill="currentColor"
+                          />
+                          <div className="flex flex-col">
+                            <span className="font-roboto text-lg font-bold text-white">
+                              {content.rating}
+                              <span className="text-base font-normal text-stone-400">
+                                /10
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                      <button className="flex cursor-pointer gap-2.5 rounded-full px-2.5 py-1 transition-all duration-200 hover:bg-white/10">
+                        <div className="flex items-center gap-1.5">
+                          <TrendingUpIcon className="size-4 text-green-500" />
+                          <span className="font-roboto text-lg font-bold text-white">
+                            1,234
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <TriangleIcon
+                            className="size-[6px] text-[#A1A1A1]"
+                            fill="#A1A1A1"
+                          />
+                          <p className="font-roboto text-sm font-medium text-stone-400">
+                            4,567
+                          </p>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                {/* Description */}
-                <div className="font-medium text-white">
-                  {content.description}
-                </div>
+
                 {/* Creators and Cast */}
                 <div className="my-3 flex flex-col">
                   <Separator className="bg-white/20" />
@@ -412,7 +488,7 @@ function ContentDetailsComponent() {
                           ))}
                         </div>
                       </div>
-                      <Separator className="bg-white/10" />
+                      <Separator className="bg-white/20" />
                     </>
                   )}
 
@@ -442,7 +518,7 @@ function ContentDetailsComponent() {
                           ))}
                         </div>
                       </div>
-                      <Separator className="bg-white/10" />
+                      <Separator className="bg-white/20" />
                     </>
                   )}
 
@@ -489,7 +565,7 @@ function ContentDetailsComponent() {
               </div>
 
               {/* Add to watchlist button */}
-              <div className="mt-4 flex w-full flex-2 items-center justify-center">
+              <div className="mt-4 hidden w-full flex-2 items-center justify-center lg:flex">
                 <div className="flex w-full flex-col gap-4">
                   {content.status === "upcoming" && (
                     <div className="flex items-center gap-2">
@@ -516,10 +592,37 @@ function ContentDetailsComponent() {
                 </div>
               </div>
             </div>
+            {/* Add to watchlist button */}
+            <div className="mt-4 flex w-full max-w-108 min-w-12 flex-2 items-center justify-center lg:hidden">
+              <div className="flex w-full flex-col gap-4">
+                {content.status === "upcoming" && (
+                  <div className="flex items-center gap-2">
+                    <div className="bg-custom-yellow-100 h-8 w-1 rounded-full" />
+                    <div>
+                      <p className="mt-0.5 font-sans text-xs font-normal text-white">
+                        {content.releaseDate}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <button className="bg-custom-yellow-100 hover:bg-custom-yellow-300 flex w-full cursor-pointer items-center gap-0.5 rounded-full px-3 py-2 transition-all duration-200">
+                  <PlusIcon className="text-black" />
+                  <div className="ml-2">
+                    <p className="text-left font-sans text-sm font-semibold text-black">
+                      Add to my Watchlist
+                    </p>
+                    {/* TODO: Replace with actual number of users who added to watchlist */}
+                    <p className="text-left font-sans text-xs font-medium text-black">
+                      Added by 9.5k users
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      {/* Second Section */}
+      {/* Settings Section */}
       {user !== undefined && user.role === "ADMIN" && (
         <div className="bg-custom-yellow-100 flex w-full justify-center">
           <div className="flex max-w-7xl items-center py-2">
@@ -538,7 +641,7 @@ function ContentDetailsComponent() {
       )}
 
       {/* White Section */}
-      <div className="w-full bg-white px-5">
+      <div className="xs:px-2 w-full bg-white px-1 sm:px-4 md:px-8">
         <div className="mx-auto h-full w-full max-w-7xl py-6">
           <div className="flex min-h-[300px] w-full gap-14 px-2 xl:px-0">
             <div className="flex w-full flex-7 flex-col gap-y-15">
@@ -548,7 +651,7 @@ function ContentDetailsComponent() {
                   <SectionLink label="Photos" numberOfItems={images.length} />
                 </div>
                 {/* Image gallery */}
-                <ImageGallery images={galleryImages} />
+                <ImageGallery images={carouselImages} />
               </div>
               {/* Top Cast Section */}
               <div className="w-full">
@@ -606,7 +709,6 @@ function ContentDetailsComponent() {
                             ))}
                           </div>
                         </div>
-                        <Separator className="bg-white/10" />
                       </>
                     )}
                     <Separator className="bg-black/20" />
@@ -636,7 +738,6 @@ function ContentDetailsComponent() {
                             ))}
                           </div>
                         </div>
-                        <Separator className="bg-white/10" />
                       </>
                     )}
                     <Separator className="bg-black/20" />
@@ -676,7 +777,6 @@ function ContentDetailsComponent() {
                             strokeWidth={2.5}
                           />
                         </Link>
-                        <Separator className="bg-white/20" />
                       </>
                     )}
                     <Separator className="bg-black/20" />

@@ -126,6 +126,7 @@ const CarouselSection = ({ content, media }: CarouselSectionProps) => {
                         <PosterCard
                           poster={posterMedia?.fileUrl || ""}
                           withRibbon
+                          className="h-[244px] w-[165px]"
                         />
 
                         <div className="flex flex-1 gap-5">

@@ -29,7 +29,7 @@ const PosterCard = forwardRef<HTMLDivElement, PosterCardProps>(
       <div
         ref={ref}
         className={cn(
-          "relative flex h-[244px] w-[165px] cursor-pointer justify-center rounded-md rounded-tl-none transition duration-200 hover:opacity-90",
+          "relative flex cursor-pointer justify-center rounded-md rounded-tl-none transition duration-200 hover:opacity-90",
           className,
         )}
         onClick={onPosterClick}

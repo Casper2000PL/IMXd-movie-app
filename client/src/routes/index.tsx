@@ -57,7 +57,11 @@ function RouteComponent() {
                 params={{ contentId: poster.contentId! }}
                 key={poster.id}
               >
-                <PosterCard poster={poster.fileUrl} withRibbon />
+                <PosterCard
+                  poster={poster.fileUrl}
+                  withRibbon
+                  className="h-[244px] w-[165px]"
+                />
               </Link>
             ))}
         </div>
