@@ -8,6 +8,7 @@ import CelebritiesCarousel from "@/components/celebrities-carousel";
 import ImageGallery from "@/components/image-gallery";
 import PosterCard from "@/components/poster-card";
 import SectionLink from "@/components/section-link";
+import TopRatedEpisodeCard from "@/components/top-rated-episode-card";
 import {
   Carousel,
   CarouselContent,
@@ -392,16 +393,25 @@ function ContentDetailsComponent() {
 
           {/* Info */}
           <div className="flex w-full flex-col">
-            <div className="flex w-full gap-12">
-              <div className="w-full flex-4">
+            <div className="flex w-full gap-14">
+              <div className="w-full flex-7">
                 <div className="mt-4 flex gap-4">
                   <div className="hidden max-h-44.5 min-h-35 max-w-30 min-w-23.75 max-sm:flex">
-                    <PosterCard
-                      poster={postersImages[0].fileUrl}
-                      withRibbon
-                      className="rounded-xl! rounded-tl-none!"
-                      classNameImg="rounded-xl! rounded-tl-none!"
-                    />
+                    {postersImages[0] ? (
+                      <PosterCard
+                        poster={postersImages[0].fileUrl}
+                        withRibbon
+                        className="rounded-xl! rounded-tl-none!"
+                        classNameImg="rounded-xl! rounded-tl-none!"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center rounded-md bg-gray-800">
+                        <p className="text-center font-sans text-xl font-semibold text-white">
+                          No <br />
+                          poster available
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     {/* Genres Badges */}
@@ -565,7 +575,7 @@ function ContentDetailsComponent() {
               </div>
 
               {/* Add to watchlist button */}
-              <div className="mt-4 hidden w-full flex-2 items-center justify-center lg:flex">
+              <div className="mt-4 hidden w-full flex-3 items-center justify-center lg:flex">
                 <div className="flex w-full flex-col gap-4">
                   {content.status === "upcoming" && (
                     <div className="flex items-center gap-2">
@@ -592,7 +602,7 @@ function ContentDetailsComponent() {
                 </div>
               </div>
             </div>
-            {/* Add to watchlist button */}
+
             <div className="mt-4 flex w-full max-w-108 min-w-12 flex-2 items-center justify-center lg:hidden">
               <div className="flex w-full flex-col gap-4">
                 {content.status === "upcoming" && (
@@ -641,10 +651,26 @@ function ContentDetailsComponent() {
       )}
 
       {/* White Section */}
-      <div className="xs:px-2 w-full bg-white px-1 sm:px-4 md:px-8">
+      <div className="xs:px-2 w-full bg-stone-100/30 px-1 sm:px-4 md:px-8">
         <div className="mx-auto h-full w-full max-w-7xl py-6">
           <div className="flex min-h-[300px] w-full gap-14 px-2 xl:px-0">
             <div className="flex w-full flex-7 flex-col gap-y-15">
+              {/* Episodes Section */}
+              {content.type === "show" && content.numberOfEpisodes! > 0 && (
+                <div className="w-full">
+                  <div className="w-fit">
+                    <SectionLink
+                      label="Episodes"
+                      numberOfItems={Number(content.numberOfEpisodes)}
+                    />
+                  </div>
+                  <div className="mt-5 flex w-full items-center justify-start gap-4">
+                    <TopRatedEpisodeCard />
+                    <TopRatedEpisodeCard />
+                  </div>
+                </div>
+              )}
+
               {/* Photos Section */}
               <div className="w-full">
                 <div className="w-fit">
