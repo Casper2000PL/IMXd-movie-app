@@ -3,6 +3,7 @@ import { getContentById } from "@/api/content";
 import { getContentGenres } from "@/api/content-genres";
 import { getMediaByContentId } from "@/api/media";
 import { getPersonById } from "@/api/people";
+import AddToListModal from "@/components/add-to-list-modal";
 import AddToWatchlistBtn from "@/components/add-to-watchlist-btn";
 import CastLink from "@/components/cast-link";
 import CelebritiesCarousel from "@/components/celebrities-carousel";
@@ -37,6 +38,7 @@ import {
   TriangleIcon,
   XIcon,
 } from "lucide-react";
+import { useState } from "react";
 import type { User } from "shared/src/types";
 
 export const Route = createFileRoute("/content/$contentId/")({
@@ -112,6 +114,8 @@ function ContentDetailsComponent() {
 
   const carouselImages = [...galleryImages, ...postersImages];
 
+  const [isOpenAddToListModal, setIsOpenAddToListModal] = useState(false);
+
   return (
     <div className="relative w-full">
       {/* Dark Section */}
@@ -146,11 +150,6 @@ function ContentDetailsComponent() {
               <div className="mt-1 flex items-center gap-[6px] font-sans text-sm text-white/70">
                 {content && content.releaseDate !== null && (
                   <span>{getYear(content.releaseDate?.toString())}</span>
-                )}
-                {content && content.releaseDate !== null && (
-                  <span>
-                    {formatDate(content.releaseDate?.toString(), "yyyy")}
-                  </span>
                 )}
 
                 <div className="bg-muted-foreground size-[3px] rounded-full" />
@@ -607,7 +606,9 @@ function ContentDetailsComponent() {
                       </div>
                     </div>
                   )}
-                  <AddToWatchlistBtn />
+                  <AddToWatchlistBtn
+                    onClickModal={() => setIsOpenAddToListModal(true)}
+                  />
                   <MarkAsWatchedBtn />
                 </div>
               </div>
@@ -634,7 +635,9 @@ function ContentDetailsComponent() {
                     </div>
                   </div>
                 )}
-                <AddToWatchlistBtn />
+                <AddToWatchlistBtn
+                  onClickModal={() => setIsOpenAddToListModal(true)}
+                />
                 <MarkAsWatchedBtn />
               </div>
             </div>
@@ -823,6 +826,12 @@ function ContentDetailsComponent() {
           </div>
         </div>
       </div>
+      <AddToListModal
+        isOpen={isOpenAddToListModal}
+        setIsOpen={setIsOpenAddToListModal}
+        posterUrl={postersImages[0].fileUrl!}
+        title={content.title}
+      />
     </div>
   );
 }
