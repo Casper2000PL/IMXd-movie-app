@@ -3,9 +3,11 @@ import { getContentById } from "@/api/content";
 import { getContentGenres } from "@/api/content-genres";
 import { getMediaByContentId } from "@/api/media";
 import { getPersonById } from "@/api/people";
+import AddToWatchlistBtn from "@/components/add-to-watchlist-btn";
 import CastLink from "@/components/cast-link";
 import CelebritiesCarousel from "@/components/celebrities-carousel";
 import ImageGallery from "@/components/image-gallery";
+import MarkAsWatchedBtn from "@/components/mark-as-watched-btn";
 import PosterCard from "@/components/poster-card";
 import SectionLink from "@/components/section-link";
 import TopRatedEpisodeCard from "@/components/top-rated-episode-card";
@@ -20,15 +22,15 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { authClient } from "@/lib/auth-client";
 import { convertToEmbedUrl } from "@/utils/convertToEmbedUrl";
-import { extractYearFromDate, formatRuntime } from "@/utils/dateUtils";
+import { formatRuntime } from "@/utils/dateUtils";
 import { DialogClose } from "@radix-ui/react-dialog";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { formatDate, getYear } from "date-fns";
 import {
   ChevronRightIcon,
   ClapperboardIcon,
   ImageIcon,
-  PlusIcon,
   SettingsIcon,
   StarIcon,
   TrendingUpIcon,
@@ -142,7 +144,15 @@ function ContentDetailsComponent() {
                 {content.title}
               </h1>
               <div className="mt-1 flex items-center gap-[6px] font-sans text-sm text-white/70">
-                <span>{extractYearFromDate(content.releaseDate)}</span>
+                {content && content.releaseDate !== null && (
+                  <span>{getYear(content.releaseDate?.toString())}</span>
+                )}
+                {content && content.releaseDate !== null && (
+                  <span>
+                    {formatDate(content.releaseDate?.toString(), "yyyy")}
+                  </span>
+                )}
+
                 <div className="bg-muted-foreground size-[3px] rounded-full" />
                 <span>{content.runtime && formatRuntime(content.runtime)}</span>
               </div>
@@ -393,9 +403,10 @@ function ContentDetailsComponent() {
 
           {/* Info */}
           <div className="flex w-full flex-col">
-            <div className="flex w-full gap-14">
+            <div className="mt-4 flex w-full gap-14">
+              {/* Genres Description and Cast */}
               <div className="w-full flex-7">
-                <div className="mt-4 flex gap-4">
+                <div className="mt-2 flex gap-4">
                   <div className="hidden max-h-44.5 min-h-35 max-w-30 min-w-23.75 max-sm:flex">
                     {postersImages[0] ? (
                       <PosterCard
@@ -415,7 +426,7 @@ function ContentDetailsComponent() {
                   </div>
                   <div>
                     {/* Genres Badges */}
-                    <div className="my-4 flex w-full flex-1 gap-3">
+                    <div className="mb-4 flex w-full flex-1 gap-3">
                       {genres.map((genre) => (
                         <Link
                           to="/"
@@ -528,7 +539,7 @@ function ContentDetailsComponent() {
                           ))}
                         </div>
                       </div>
-                      <Separator className="bg-white/20" />
+                      <Separator className="bg-white/10" />
                     </>
                   )}
 
@@ -575,58 +586,56 @@ function ContentDetailsComponent() {
               </div>
 
               {/* Add to watchlist button */}
-              <div className="mt-4 hidden w-full flex-3 items-center justify-center lg:flex">
-                <div className="flex w-full flex-col gap-4">
+              <div className="hidden w-full flex-3 justify-start lg:flex">
+                <div className="flex w-full flex-col gap-3">
                   {content.status === "upcoming" && (
                     <div className="flex items-center gap-2">
-                      <div className="bg-custom-yellow-100 h-8 w-1 rounded-full" />
-                      <div>
-                        <p className="mt-0.5 font-sans text-xs font-normal text-white">
-                          {content.releaseDate}
+                      <div className="bg-custom-yellow-100 h-9 w-1 rounded-full" />
+                      <div className="flex flex-col">
+                        <p className="font-sans text-xs font-semibold tracking-[2px] text-white">
+                          {content.status?.toUpperCase()}
                         </p>
+                        {content && content.releaseDate !== null && (
+                          <p className="font-sans text-sm font-medium text-white">
+                            Expected{" "}
+                            {formatDate(
+                              content.releaseDate?.toString(),
+                              "MMMM d, yyyy",
+                            )}
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}
-                  <button className="bg-custom-yellow-100 hover:bg-custom-yellow-300 flex w-full cursor-pointer items-center gap-0.5 rounded-full px-3 py-2 transition-all duration-200">
-                    <PlusIcon className="text-black" />
-                    <div className="ml-2">
-                      <p className="text-left font-sans text-sm font-semibold text-black">
-                        Add to my Watchlist
-                      </p>
-                      {/* TODO: Replace with actual number of users who added to watchlist */}
-                      <p className="text-left font-sans text-xs font-medium text-black">
-                        Added by 9.5k users
-                      </p>
-                    </div>
-                  </button>
+                  <AddToWatchlistBtn />
+                  <MarkAsWatchedBtn />
                 </div>
               </div>
             </div>
 
             <div className="mt-4 flex w-full max-w-108 min-w-12 flex-2 items-center justify-center lg:hidden">
-              <div className="flex w-full flex-col gap-4">
+              <div className="flex w-full flex-col gap-2">
                 {content.status === "upcoming" && (
                   <div className="flex items-center gap-2">
-                    <div className="bg-custom-yellow-100 h-8 w-1 rounded-full" />
-                    <div>
-                      <p className="mt-0.5 font-sans text-xs font-normal text-white">
-                        {content.releaseDate}
+                    <div className="bg-custom-yellow-100 h-9 w-1 rounded-full" />
+                    <div className="flex flex-col">
+                      <p className="font-sans text-xs font-semibold tracking-[2px] text-white">
+                        {content.status?.toUpperCase()}
                       </p>
+                      {content && content.releaseDate !== null && (
+                        <p className="font-sans text-sm font-medium text-white">
+                          Expected{" "}
+                          {formatDate(
+                            content.releaseDate?.toString(),
+                            "MMMM d, yyyy",
+                          )}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
-                <button className="bg-custom-yellow-100 hover:bg-custom-yellow-300 flex w-full cursor-pointer items-center gap-0.5 rounded-full px-3 py-2 transition-all duration-200">
-                  <PlusIcon className="text-black" />
-                  <div className="ml-2">
-                    <p className="text-left font-sans text-sm font-semibold text-black">
-                      Add to my Watchlist
-                    </p>
-                    {/* TODO: Replace with actual number of users who added to watchlist */}
-                    <p className="text-left font-sans text-xs font-medium text-black">
-                      Added by 9.5k users
-                    </p>
-                  </div>
-                </button>
+                <AddToWatchlistBtn />
+                <MarkAsWatchedBtn />
               </div>
             </div>
           </div>
@@ -766,7 +775,7 @@ function ContentDetailsComponent() {
                         </div>
                       </>
                     )}
-                    <Separator className="bg-black/20" />
+                    <Separator className="bg-black/10" />
                     {/* Stars */}
                     {actors.length > 0 && (
                       <>
