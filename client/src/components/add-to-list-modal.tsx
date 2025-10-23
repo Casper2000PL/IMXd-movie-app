@@ -1,4 +1,9 @@
-import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ChevronRightIcon, XIcon } from "lucide-react";
 import PosterCard from "./poster-card";
 import { Link } from "@tanstack/react-router";
@@ -23,6 +28,7 @@ const AddToListModal = ({
         className="bottom-0 flex max-h-[607px] min-h-30 w-full max-w-[664px]! rounded-none border-none bg-gray-800 p-0 max-sm:translate-y-[0%]"
         showCloseButton={false}
       >
+        <DialogTitle></DialogTitle>
         <div className="flex w-full flex-col">
           <div className="mx-5 flex w-full items-center gap-4 pt-5 pb-6">
             <div className="h-fit w-[50px]">

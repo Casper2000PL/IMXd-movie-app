@@ -9,6 +9,7 @@ import CastLink from "@/components/cast-link";
 import CelebritiesCarousel from "@/components/celebrities-carousel";
 import ImageGallery from "@/components/image-gallery";
 import MarkAsWatchedBtn from "@/components/mark-as-watched-btn";
+import ModalWithChildren from "@/components/modal-with-children";
 import PosterCard from "@/components/poster-card";
 import SectionLink from "@/components/section-link";
 import TopRatedEpisodeCard from "@/components/top-rated-episode-card";
@@ -19,7 +20,6 @@ import {
   CarouselNextCustom,
   CarouselPreviousCustom,
 } from "@/components/ui/carousel";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { authClient } from "@/lib/auth-client";
 import { convertToEmbedUrl } from "@/utils/convertToEmbedUrl";
@@ -29,7 +29,6 @@ import { DialogClose } from "@radix-ui/react-dialog";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { formatDate, getYear } from "date-fns";
 import {
-  ChevronRightIcon,
   ClapperboardIcon,
   ImageIcon,
   SettingsIcon,
@@ -115,6 +114,9 @@ function ContentDetailsComponent() {
   const carouselImages = [...galleryImages, ...postersImages];
 
   const [isOpenAddToListModal, setIsOpenAddToListModal] = useState(false);
+  const [isOpenGalleryModal, setIsOpenGalleryModal] = useState(false);
+  const [isOpenPosterGalleryModal, setIsOpenPosterGalleryModal] =
+    useState(false);
 
   return (
     <div className="relative w-full">
@@ -215,66 +217,20 @@ function ContentDetailsComponent() {
               {/* Poster Card */}
               <div className="hidden flex-1 sm:flex">
                 {postersImages.length > 0 ? (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <PosterCard
-                        poster={postersImages[0].fileUrl}
-                        className="h-full w-full"
-                        withRibbon
-                        onRibbonClick={() => {
-                          console.log("Add to collection clicked");
-                        }}
-                      />
-                    </DialogTrigger>
-                    <DialogContent
-                      fullScreen={true}
-                      className="flex h-full max-h-screen !w-full !max-w-full flex-col items-center rounded-none border-2 border-none bg-black px-2 pt-4 pb-0 text-white outline-none md:px-4 xl:px-10"
-                      showCloseButton={false}
-                    >
-                      <div className="h-full w-full">
-                        <Carousel
-                          className="m-0 h-full w-full p-0"
-                          opts={{
-                            loop: true,
-                            watchDrag: false,
-                            duration: 0,
-                          }}
-                        >
-                          <CarouselContent className="m-0 flex h-full w-full p-0">
-                            {postersImages.map((image, index) => (
-                              <CarouselItem key={index} className="w-full p-0">
-                                <div className="flex h-full w-full flex-col gap-5">
-                                  <div className="flex w-full items-center justify-between px-2">
-                                    <DialogClose className="flex w-fit cursor-pointer items-center justify-center gap-1 rounded-full px-3 py-1.5 transition-all duration-200 hover:bg-white/20 active:bg-white/30">
-                                      <XIcon
-                                        className="size-5"
-                                        strokeWidth={2.5}
-                                      />
-                                      <span className="font-roboto text-sm font-semibold">
-                                        Close
-                                      </span>
-                                    </DialogClose>
-                                    <p className="text-custom-yellow-100 font-roboto text-base">
-                                      {index + 1} of {postersImages.length}
-                                    </p>
-                                  </div>
-                                  <div className="flex h-full w-full justify-center">
-                                    <img
-                                      src={image.fileUrl}
-                                      alt={image.title || "Image title"}
-                                      className="h-full object-cover"
-                                    />
-                                  </div>
-                                </div>
-                              </CarouselItem>
-                            ))}
-                          </CarouselContent>
-                          <CarouselNextCustom />
-                          <CarouselPreviousCustom />
-                        </Carousel>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  <div className="relative h-full w-full">
+                    <button
+                      onClick={() => setIsOpenPosterGalleryModal(true)}
+                      className="absolute top-0 right-0 bottom-0 left-0 z-2 cursor-pointer bg-white/35"
+                    ></button>
+                    <PosterCard
+                      poster={postersImages[0].fileUrl}
+                      className="z-1 h-full w-full"
+                      withRibbon
+                      onRibbonClick={() => {
+                        console.log("Add to collection clicked");
+                      }}
+                    />
+                  </div>
                 ) : (
                   <div className="flex h-full w-full items-center justify-center rounded-md bg-gray-800">
                     <p className="text-center font-sans text-xl font-semibold text-white">
@@ -315,65 +271,16 @@ function ContentDetailsComponent() {
                   </p>
                 </Link>
                 {/* images button */}
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <button className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-4 rounded-md bg-white/10 transition-all duration-200 hover:bg-white/25">
-                      <ImageIcon className="size-8 text-white" />
-                      <p className="font-sans text-sm font-semibold text-white">
-                        <span>{carouselImages.length}</span>{" "}
-                        {carouselImages.length === 1 ? "IMAGE" : "IMAGES"}
-                      </p>
-                    </button>
-                  </DialogTrigger>
-                  <DialogContent
-                    fullScreen={true}
-                    className="flex h-screen w-full flex-col items-center bg-black px-2 pt-4 pb-0 text-white outline-none md:px-4 xl:px-10"
-                    showCloseButton={false}
-                  >
-                    <div className="h-full w-full">
-                      <Carousel
-                        className="m-0 h-full w-full p-0"
-                        opts={{
-                          loop: true,
-                          watchDrag: false,
-                          duration: 0,
-                        }}
-                      >
-                        <CarouselContent className="m-0 flex h-full w-full p-0">
-                          {carouselImages.map((image, index) => (
-                            <CarouselItem key={index} className="w-full p-0">
-                              <div className="flex h-full w-full flex-col gap-5">
-                                <div className="flex w-full items-center justify-between px-2">
-                                  <DialogClose className="flex w-fit cursor-pointer items-center justify-center gap-1 rounded-full px-3 py-1.5 transition-all duration-200 hover:bg-white/20 active:bg-white/30">
-                                    <XIcon
-                                      className="size-5"
-                                      strokeWidth={2.5}
-                                    />
-                                    <span className="font-roboto text-sm font-semibold">
-                                      Close
-                                    </span>
-                                  </DialogClose>
-                                  <p className="text-custom-yellow-100 font-roboto text-base">
-                                    {index + 1} of {images.length}
-                                  </p>
-                                </div>
-                                <div className="flex h-full w-full justify-center">
-                                  <img
-                                    src={image.fileUrl}
-                                    alt={image.title || "Image title"}
-                                    className="h-full object-cover"
-                                  />
-                                </div>
-                              </div>
-                            </CarouselItem>
-                          ))}
-                        </CarouselContent>
-                        <CarouselNextCustom />
-                        <CarouselPreviousCustom />
-                      </Carousel>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <button
+                  className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-4 rounded-md bg-white/10 transition-all duration-200 hover:bg-white/25"
+                  onClick={() => setIsOpenGalleryModal(true)}
+                >
+                  <ImageIcon className="size-8 text-white" />
+                  <p className="font-sans text-sm font-semibold text-white">
+                    <span>{carouselImages.length}</span>{" "}
+                    {carouselImages.length === 1 ? "IMAGE" : "IMAGES"}
+                  </p>
+                </button>
               </div>
             </div>
             <div className="mt-2 flex gap-1 lg:hidden">
@@ -387,16 +294,16 @@ function ContentDetailsComponent() {
                   {videos.length === 1 ? "VIDEO" : "VIDEOS"}
                 </p>
               </Link>
-              <Link
-                to="/"
+              <button
                 className="flex flex-1 items-center justify-center gap-4 rounded-full bg-white/10 transition-all duration-200 hover:bg-white/25"
+                onClick={() => setIsOpenGalleryModal(true)}
               >
                 <ImageIcon className="size-4 text-white" />
                 <p className="font-sans text-sm font-semibold text-white">
                   <span>{carouselImages.length}</span>{" "}
                   {carouselImages.length === 1 ? "IMAGE" : "IMAGES"}
                 </p>
-              </Link>
+              </button>
             </div>
           </div>
 
@@ -543,7 +450,7 @@ function ContentDetailsComponent() {
                   )}
 
                   {/* Stars */}
-                  {actors.length > 0 && (
+                  {/* {actors.length > 0 && (
                     <>
                       <Link
                         to="/"
@@ -580,7 +487,7 @@ function ContentDetailsComponent() {
                       </Link>
                       <Separator className="bg-white/20" />
                     </>
-                  )}
+                  )} */}
                 </div>
               </div>
 
@@ -780,7 +687,7 @@ function ContentDetailsComponent() {
                     )}
                     <Separator className="bg-black/10" />
                     {/* Stars */}
-                    {actors.length > 0 && (
+                    {/* {actors.length > 0 && (
                       <>
                         <Link
                           to="/"
@@ -816,7 +723,7 @@ function ContentDetailsComponent() {
                           />
                         </Link>
                       </>
-                    )}
+                    )} */}
                     <Separator className="bg-black/20" />
                   </div>
                 </div>
@@ -832,6 +739,94 @@ function ContentDetailsComponent() {
         posterUrl={postersImages[0].fileUrl!}
         title={content.title}
       />
+      <ModalWithChildren
+        isOpen={isOpenGalleryModal}
+        setIsOpen={setIsOpenGalleryModal}
+      >
+        <div className="h-full w-full">
+          <Carousel
+            className="m-0 h-full w-full p-0"
+            opts={{
+              loop: true,
+              watchDrag: false,
+              duration: 0,
+            }}
+          >
+            <CarouselContent className="m-0 flex h-full w-full p-0">
+              {carouselImages.map((image, index) => (
+                <CarouselItem key={index} className="w-full p-0">
+                  <div className="flex h-full w-full flex-col gap-5">
+                    <div className="flex w-full items-center justify-between px-2">
+                      <DialogClose className="flex w-fit cursor-pointer items-center justify-center gap-1 rounded-full px-3 py-1.5 transition-all duration-200 hover:bg-white/20 active:bg-white/30">
+                        <XIcon className="size-5" strokeWidth={2.5} />
+                        <span className="font-roboto text-sm font-semibold">
+                          Close
+                        </span>
+                      </DialogClose>
+                      <p className="text-custom-yellow-100 font-roboto text-base">
+                        {index + 1} of {images.length}
+                      </p>
+                    </div>
+                    <div className="flex h-full w-full justify-center">
+                      <img
+                        src={image.fileUrl}
+                        alt={image.title || "Image title"}
+                        className="h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselNextCustom />
+            <CarouselPreviousCustom />
+          </Carousel>
+        </div>
+      </ModalWithChildren>
+      <ModalWithChildren
+        isOpen={isOpenPosterGalleryModal}
+        setIsOpen={setIsOpenPosterGalleryModal}
+      >
+        <div className="h-full w-full">
+          <Carousel
+            className="m-0 h-full w-full p-0"
+            opts={{
+              loop: true,
+              watchDrag: false,
+              duration: 0,
+            }}
+          >
+            <CarouselContent className="m-0 flex h-full w-full p-0">
+              {postersImages.map((image, index) => (
+                <CarouselItem key={index} className="w-full p-0">
+                  <div className="flex h-full w-full flex-col gap-5">
+                    <div className="flex w-full items-center justify-between px-2">
+                      <DialogClose className="flex w-fit cursor-pointer items-center justify-center gap-1 rounded-full px-3 py-1.5 transition-all duration-200 hover:bg-white/20 active:bg-white/30">
+                        <XIcon className="size-5" strokeWidth={2.5} />
+                        <span className="font-roboto text-sm font-semibold">
+                          Close
+                        </span>
+                      </DialogClose>
+                      <p className="text-custom-yellow-100 font-roboto text-base">
+                        {index + 1} of {postersImages.length}
+                      </p>
+                    </div>
+                    <div className="flex h-full w-full justify-center">
+                      <img
+                        src={image.fileUrl}
+                        alt={image.title || "Image title"}
+                        className="h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselNextCustom />
+            <CarouselPreviousCustom />
+          </Carousel>
+        </div>
+      </ModalWithChildren>
     </div>
   );
 }
