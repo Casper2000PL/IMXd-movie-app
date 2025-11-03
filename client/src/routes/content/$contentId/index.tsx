@@ -13,6 +13,7 @@ import ModalWithChildren from "@/components/modal-with-children";
 import PosterCard from "@/components/poster-card";
 import SectionLink from "@/components/section-link";
 import TopRatedEpisodeCard from "@/components/top-rated-episode-card";
+import { Button } from "@/components/ui/button";
 import {
   Carousel,
   CarouselContent,
@@ -620,6 +621,12 @@ function ContentDetailsComponent() {
                       />
                     ))}
                   </div>
+                  <Button variant="outline" className="mt-4">
+                    View All
+                  </Button>
+                  <Button variant="yellow" className="ml-4">
+                    View All
+                  </Button>
                 </div>
                 <div className="mt-10 block lg:hidden">
                   <CelebritiesCarousel actors={topCast} />
