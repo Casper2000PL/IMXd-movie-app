@@ -32,6 +32,7 @@ import { formatDate, getYear } from "date-fns";
 import {
   ClapperboardIcon,
   ImageIcon,
+  ImageOffIcon,
   SettingsIcon,
   StarIcon,
   TrendingUpIcon,
@@ -103,6 +104,8 @@ function ContentDetailsComponent() {
   const writers = castCrew.filter((cc) => cc.role === "writer");
   const actors = castCrew.filter((cc) => cc.role === "actor").slice(0, 3); // Top 3 stars
   const topCast = castCrew.filter((cc) => cc.role === "actor").slice(0, 18);
+
+  console.log(actors);
 
   const videos = media.filter((m) => m.type === "video");
   const postersImages = media.filter((m) => m.mediaCategory === "poster");
@@ -218,23 +221,19 @@ function ContentDetailsComponent() {
               {/* Poster Card */}
               <div className="hidden flex-1 sm:flex">
                 {postersImages.length > 0 ? (
-                  <div className="relative h-full w-full">
-                    <button
-                      onClick={() => setIsOpenPosterGalleryModal(true)}
-                      className="absolute top-0 right-0 bottom-0 left-0 z-2 cursor-pointer bg-white/35"
-                    ></button>
-                    <PosterCard
-                      poster={postersImages[0].fileUrl}
-                      className="z-1 h-full w-full"
-                      withRibbon
-                      onRibbonClick={() => {
-                        console.log("Add to collection clicked");
-                      }}
-                    />
-                  </div>
+                  <PosterCard
+                    poster={postersImages[0].fileUrl}
+                    className="z-1 h-full w-full"
+                    withRibbon
+                    onRibbonClick={() => {
+                      console.log("Add to collection clicked");
+                    }}
+                    onPosterClick={() => setIsOpenPosterGalleryModal(true)}
+                  />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center rounded-md bg-gray-800">
-                    <p className="text-center font-sans text-xl font-semibold text-white">
+                  <div className="flex h-full w-full flex-col items-center justify-center gap-4 rounded-md bg-gray-800">
+                    <ImageOffIcon className="size-6 text-white" />
+                    <p className="text-center font-sans text-lg font-semibold text-white">
                       No <br />
                       poster available
                     </p>
@@ -321,6 +320,10 @@ function ContentDetailsComponent() {
                         withRibbon
                         className="rounded-xl! rounded-tl-none!"
                         classNameImg="rounded-xl! rounded-tl-none!"
+                        onRibbonClick={() => {
+                          console.log("Add to collection clicked");
+                        }}
+                        onPosterClick={() => setIsOpenPosterGalleryModal(true)}
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center rounded-md bg-gray-800">

@@ -11,6 +11,7 @@ import { ChevronDownIcon, CircleUserRoundIcon } from "lucide-react";
 import { useState } from "react";
 import { User } from "shared/src/types";
 import NavButton from "./nav-button";
+import AutoCompleteSearchbar from "./auto-complete-searchbar";
 
 const Navbar = () => {
   const { data: session } = authClient.useSession();
@@ -35,7 +36,7 @@ const Navbar = () => {
             </p>
           </div>
         </Link>
-
+        <AutoCompleteSearchbar />
         {isLoggedIn ? (
           <DropdownMenu open={open} onOpenChange={setOpen}>
             <DropdownMenuTrigger asChild>
