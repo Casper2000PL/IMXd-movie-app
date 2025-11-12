@@ -7,15 +7,15 @@ import {
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
-import { ChevronDownIcon, CircleUserRoundIcon } from "lucide-react";
+import { ChevronDownIcon, CircleUserRoundIcon, Loader } from "lucide-react";
 import { useState } from "react";
 import { User } from "shared/src/types";
 import NavButton from "./nav-button";
 import AutoCompleteSearchbar from "./auto-complete-searchbar";
 
 const Navbar = () => {
-  const { data: session } = authClient.useSession();
-  const isLoggedIn = !!session;
+  const { data: session, isPending: authLoading } = authClient.useSession();
+  const isLoggedIn = !!session && !authLoading;
   const [open, setOpen] = useState(false);
 
   const user = session?.user as User;
@@ -37,7 +37,9 @@ const Navbar = () => {
           </div>
         </Link>
         <AutoCompleteSearchbar />
-        {isLoggedIn ? (
+        {authLoading ? (
+          <Loader className="size-5 animate-spin text-white" />
+        ) : isLoggedIn ? (
           <DropdownMenu open={open} onOpenChange={setOpen}>
             <DropdownMenuTrigger asChild>
               <NavButton>
@@ -63,47 +65,101 @@ const Navbar = () => {
               className="font-roboto h-full w-45 rounded-xs border-0 bg-gray-800 p-0 py-2 font-normal text-white!"
               align="end"
             >
-              <DropdownMenuItem className="rounded-x py-3 pl-4 text-base hover:bg-white/10! hover:text-white!">
-                <Link to="/profile/$profileId" params={{ profileId: user.id }}>
-                  Your Profile
-                </Link>
+              <DropdownMenuItem className="p-0 text-base">
+                <div className="flex w-full bg-gray-800">
+                  <Link
+                    to="/profile/$profileId"
+                    params={{ profileId: user.id }}
+                    className="w-full bg-gray-800 py-2.5 pl-4 hover:bg-white/10! hover:text-white!"
+                  >
+                    Your Profile
+                  </Link>
+                </div>
               </DropdownMenuItem>
-              <DropdownMenuItem className="py-2.5 pl-4 text-base hover:bg-white/15! hover:text-white!">
-                Your Watchlist
+              <DropdownMenuItem className="p-0 text-base">
+                <div className="flex w-full bg-gray-800">
+                  <Link
+                    to="/profile/$profileId"
+                    params={{ profileId: user.id }}
+                    className="w-full bg-gray-800 py-2.5 pl-4 hover:bg-white/10! hover:text-white!"
+                  >
+                    Your Watchlist
+                  </Link>
+                </div>
               </DropdownMenuItem>
-              <DropdownMenuItem className="py-2.5 pl-4 text-base hover:bg-white/15! hover:text-white!">
-                Your Ratings
+              <DropdownMenuItem className="p-0 text-base">
+                <div className="flex w-full bg-gray-800">
+                  <Link
+                    to="/profile/$profileId"
+                    params={{ profileId: user.id }}
+                    className="w-full bg-gray-800 py-2.5 pl-4 hover:bg-white/10! hover:text-white!"
+                  >
+                    Your Ratings
+                  </Link>
+                </div>
               </DropdownMenuItem>
-              <DropdownMenuItem className="py-2.5 pl-4 text-base hover:bg-white/15! hover:text-white!">
-                Your Lists
+              <DropdownMenuItem className="p-0 text-base">
+                <div className="flex w-full bg-gray-800">
+                  <Link
+                    to="/profile/$profileId"
+                    params={{ profileId: user.id }}
+                    className="w-full bg-gray-800 py-2.5 pl-4 hover:bg-white/10! hover:text-white!"
+                  >
+                    Your Lists
+                  </Link>
+                </div>
               </DropdownMenuItem>
-              <DropdownMenuItem className="py-2.5 pl-4 text-base hover:bg-white/15! hover:text-white!">
-                Your Watch History
+              <DropdownMenuItem className="p-0 text-base">
+                <div className="flex w-full bg-gray-800">
+                  <Link
+                    to="/profile/$profileId"
+                    params={{ profileId: user.id }}
+                    className="w-full bg-gray-800 py-2.5 pl-4 hover:bg-white/10! hover:text-white!"
+                  >
+                    Your Watch History
+                  </Link>
+                </div>
               </DropdownMenuItem>
-              <DropdownMenuItem className="py-2.5 pl-4 text-base hover:bg-white/15! hover:text-white!">
-                <Link
-                  to="/profile/$profileId/settings"
-                  params={{ profileId: user.id }}
+              <DropdownMenuItem className="p-0 text-base">
+                <div className="flex w-full bg-gray-800">
+                  <Link
+                    to="/profile/$profileId/settings"
+                    params={{ profileId: user.id }}
+                    className="w-full bg-gray-800 py-2.5 pl-4 hover:bg-white/10! hover:text-white!"
+                  >
+                    Account Settings
+                  </Link>
+                </div>
+              </DropdownMenuItem>
+              {user.role === "ADMIN" && (
+                <DropdownMenuItem className="p-0 text-base">
+                  <div className="flex w-full bg-gray-800">
+                    <Link
+                      to="/add-content"
+                      className="w-full bg-red-500/25 py-2.5 pl-4 hover:bg-red-500/50! hover:text-white!"
+                    >
+                      Add Content
+                    </Link>
+                  </div>
+                </DropdownMenuItem>
+              )}
+              {user.role === "ADMIN" && (
+                <DropdownMenuItem className="p-0 text-base">
+                  <div className="flex w-full bg-gray-800">
+                    <Link
+                      to="/add-people"
+                      className="w-full bg-red-500/25 py-2.5 pl-4 hover:bg-red-500/50! hover:text-white!"
+                    >
+                      Add People
+                    </Link>
+                  </div>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem asChild>
+                <button
+                  onClick={() => authClient.signOut()}
+                  className="w-full py-2.5 pl-4 text-base! hover:bg-white/15! hover:text-white!"
                 >
-                  Account Settings
-                </Link>
-              </DropdownMenuItem>
-              {user.role === "ADMIN" && (
-                <DropdownMenuItem className="bg-red-500/25 py-2.5 pl-4 text-base hover:bg-red-500/50! hover:text-white!">
-                  <Link to="/add-content">Add Content</Link>
-                </DropdownMenuItem>
-              )}
-              {user.role === "ADMIN" && (
-                <DropdownMenuItem className="bg-red-500/25 py-2.5 pl-4 text-base hover:bg-red-500/50! hover:text-white!">
-                  <Link to="/add-people">Add People</Link>
-                </DropdownMenuItem>
-              )}
-
-              <DropdownMenuItem
-                className="py-2.5 pl-4 text-base hover:bg-white/15! hover:text-white!"
-                asChild
-              >
-                <button onClick={() => authClient.signOut()} className="w-full">
                   Sign out
                 </button>
               </DropdownMenuItem>
