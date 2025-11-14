@@ -30,6 +30,7 @@ import { DialogClose } from "@radix-ui/react-dialog";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { formatDate, getYear } from "date-fns";
 import {
+  ChevronRightIcon,
   ClapperboardIcon,
   ImageIcon,
   ImageOffIcon,
@@ -119,6 +120,7 @@ function ContentDetailsComponent() {
 
   const [isOpenAddToListModal, setIsOpenAddToListModal] = useState(false);
   const [isOpenGalleryModal, setIsOpenGalleryModal] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
   const [isOpenPosterGalleryModal, setIsOpenPosterGalleryModal] =
     useState(false);
 
@@ -146,7 +148,7 @@ function ContentDetailsComponent() {
         />
 
         {/* Content Layer */}
-        <div className="xs:px-2 relative z-10 mx-auto w-full max-w-7xl px-1 py-10 sm:px-4 md:px-8">
+        <div className="xs:px-4 relative z-10 mx-auto w-full max-w-7xl px-4 py-10 sm:px-4 md:px-8">
           {/* Text */}
           <div className="flex w-full justify-between">
             <div>
@@ -273,7 +275,10 @@ function ContentDetailsComponent() {
                 {/* images button */}
                 <button
                   className="flex flex-1 cursor-pointer flex-col items-center justify-center gap-4 rounded-md bg-white/10 transition-all duration-200 hover:bg-white/25"
-                  onClick={() => setIsOpenGalleryModal(true)}
+                  onClick={() => {
+                    setIsOpenGalleryModal(true);
+                    setGalleryIndex(0);
+                  }}
                 >
                   <ImageIcon className="size-8 text-white" />
                   <p className="font-sans text-sm font-semibold text-white">
@@ -296,7 +301,10 @@ function ContentDetailsComponent() {
               </Link>
               <button
                 className="flex flex-1 items-center justify-center gap-4 rounded-full bg-white/10 transition-all duration-200 hover:bg-white/25"
-                onClick={() => setIsOpenGalleryModal(true)}
+                onClick={() => {
+                  setIsOpenGalleryModal(true);
+                  setGalleryIndex(0);
+                }}
               >
                 <ImageIcon className="size-4 text-white" />
                 <p className="font-sans text-sm font-semibold text-white">
@@ -449,22 +457,22 @@ function ContentDetailsComponent() {
                           ))}
                         </div>
                       </div>
-                      <Separator className="bg-white/10" />
+                      <Separator className="bg-white/20" />
                     </>
                   )}
 
                   {/* Stars */}
-                  {/* {actors.length > 0 && (
+                  {actors.length > 0 && (
                     <>
-                      <Link
-                        to="/"
-                        className="group flex w-full items-center gap-3 py-3"
-                      >
-                        <span className="font-sans text-base font-semibold text-white group-hover:text-white/60">
+                      <div className="group relative flex flex-col justify-center gap-3 py-3 sm:flex-row sm:justify-start">
+                        <Link
+                          to="/"
+                          className="z-20 w-fit font-sans text-base font-semibold text-white group-hover:text-white/60 hover:text-white/60"
+                        >
                           Stars
-                        </span>
-                        <div className="flex-1">
-                          <ul className="flex items-center gap-3">
+                        </Link>
+                        <div className="z-20 w-fit flex-wrap">
+                          <ul className="flex flex-wrap items-center gap-3">
                             {actors.map((actor, idx) => (
                               <li
                                 key={actor.id}
@@ -473,7 +481,6 @@ function ContentDetailsComponent() {
                                 <Link
                                   to="/"
                                   className="text-blue-400 hover:underline"
-                                  onClick={(e) => e.stopPropagation()}
                                 >
                                   {actor.person?.name}
                                 </Link>
@@ -484,14 +491,19 @@ function ContentDetailsComponent() {
                             ))}
                           </ul>
                         </div>
-                        <ChevronRightIcon
-                          className="group-hover:text-custom-yellow-300 ml-auto size-5 text-white"
-                          strokeWidth={2.5}
-                        />
-                      </Link>
+                        <Link
+                          to="/"
+                          className="hover:text-custom-yellow-300 group-hover:text-custom-yellow-300 absolute top-1/2 right-0 z-10 flex h-full w-full -translate-y-1/2 items-center justify-end pr-2 text-white"
+                        >
+                          <ChevronRightIcon
+                            className="size-5"
+                            strokeWidth={2.5}
+                          />
+                        </Link>
+                      </div>
                       <Separator className="bg-white/20" />
                     </>
-                  )} */}
+                  )}
                 </div>
               </div>
 
@@ -574,7 +586,7 @@ function ContentDetailsComponent() {
       )}
 
       {/* White Section */}
-      <div className="xs:px-2 w-full bg-stone-100/30 px-1 sm:px-4 md:px-8">
+      <div className="xs:px-4 w-full bg-stone-100/30 px-4 sm:px-4 md:px-8">
         <div className="mx-auto h-full w-full max-w-7xl py-6">
           <div className="flex min-h-[300px] w-full gap-14 px-2 xl:px-0">
             <div className="flex w-full flex-7 flex-col gap-y-15">
@@ -600,7 +612,11 @@ function ContentDetailsComponent() {
                   <SectionLink label="Photos" numberOfItems={images.length} />
                 </div>
                 {/* Image gallery */}
-                <ImageGallery images={carouselImages} />
+                <ImageGallery
+                  images={carouselImages}
+                  openModal={() => setIsOpenGalleryModal(true)}
+                  setIndex={setGalleryIndex}
+                />
               </div>
               {/* Top Cast Section */}
               <div className="w-full">
@@ -637,7 +653,7 @@ function ContentDetailsComponent() {
                 {/* Other Cast Crew Details */}
                 <div className="my-6 flex w-full flex-col">
                   <div className="my-3 flex flex-col">
-                    <Separator className="bg-black/20" />
+                    <Separator className="bg-black/30" />
                     {/* Directors */}
                     {directors.length > 0 && (
                       <>
@@ -666,7 +682,7 @@ function ContentDetailsComponent() {
                         </div>
                       </>
                     )}
-                    <Separator className="bg-black/20" />
+                    <Separator className="bg-black/30" />
                     {/* Writers */}
                     {writers.length > 0 && (
                       <>
@@ -695,46 +711,7 @@ function ContentDetailsComponent() {
                         </div>
                       </>
                     )}
-                    <Separator className="bg-black/10" />
-                    {/* Stars */}
-                    {/* {actors.length > 0 && (
-                      <>
-                        <Link
-                          to="/"
-                          className="group flex w-full items-center gap-3 py-1.5"
-                        >
-                          <span className="font-sans text-base font-semibold text-black group-hover:text-black/60">
-                            Stars
-                          </span>
-                          <div className="flex-1">
-                            <ul className="flex items-center gap-3">
-                              {actors.map((actor, idx) => (
-                                <li
-                                  key={actor.id}
-                                  className="flex items-center gap-3"
-                                >
-                                  <Link
-                                    to="/"
-                                    className="text-blue-600 hover:underline"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    {actor.person?.name}
-                                  </Link>
-                                  {idx < actors.length - 1 && (
-                                    <div className="size-[2px] rounded-full bg-black" />
-                                  )}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                          <ChevronRightIcon
-                            className="ml-auto size-5 text-stone-500 group-hover:text-stone-800"
-                            strokeWidth={2.5}
-                          />
-                        </Link>
-                      </>
-                    )} */}
-                    <Separator className="bg-black/20" />
+                    <Separator className="bg-black/30" />
                   </div>
                 </div>
               </div>
@@ -760,6 +737,7 @@ function ContentDetailsComponent() {
               loop: true,
               watchDrag: false,
               duration: 0,
+              startIndex: galleryIndex,
             }}
           >
             <CarouselContent className="m-0 flex h-full w-full p-0">

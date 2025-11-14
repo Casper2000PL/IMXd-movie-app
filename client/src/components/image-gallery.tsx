@@ -18,9 +18,11 @@ type image = {
 
 type ImageGalleryProps = {
   images: image[];
+  openModal: () => void;
+  setIndex: (index: number) => void;
 };
 
-const ImageGallery = ({ images }: ImageGalleryProps) => {
+const ImageGallery = ({ images, openModal, setIndex }: ImageGalleryProps) => {
   return (
     <div className="mt-5 w-full">
       <div className="flex w-full flex-col gap-4">
@@ -28,37 +30,51 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
         <div className="flex w-full gap-4">
           {/* first 3 images */}
           {images.slice(0, 3).map((image) => (
-            <div
+            <button
               key={image.id}
-              className="max-h-41 min-h-22 min-w-0 flex-1 overflow-hidden"
+              className="max-h-41 min-h-22 min-w-0 flex-1 cursor-pointer overflow-hidden"
+              onClick={() => {
+                openModal();
+                setIndex(images.indexOf(image));
+              }}
             >
               <img
                 src={image.fileUrl}
                 alt={image.title || "Image"}
                 className="h-full w-full rounded-md object-cover object-top"
               />
-            </div>
+            </button>
           ))}
         </div>
         {/* second div row */}
         <div className="flex w-full gap-4">
           <div className="flex flex-8 gap-4">
             {images.slice(3, 6).map((image) => (
-              <div
+              <button
                 key={image.id}
-                className="max-h-41 min-h-22 min-w-0 flex-1 overflow-hidden"
+                className="max-h-41 min-h-22 min-w-0 flex-1 cursor-pointer overflow-hidden"
+                onClick={() => {
+                  openModal();
+                  setIndex(images.indexOf(image));
+                }}
               >
                 <img
                   src={image.fileUrl}
                   alt={image.title || "Image"}
                   className="h-full w-full rounded-md object-cover object-top"
                 />
-              </div>
+              </button>
             ))}
           </div>
           <div className="relative hidden flex-1 sm:flex">
             {images.length > 6 && (
-              <>
+              <button
+                className="cursor-pointer"
+                onClick={() => {
+                  openModal();
+                  setIndex(6);
+                }}
+              >
                 <img
                   src={images[6].fileUrl}
                   alt={images[6].title || "Image"}
@@ -69,7 +85,7 @@ const ImageGallery = ({ images }: ImageGalleryProps) => {
                     +&nbsp;{images.length - 6}
                   </p>
                 </div>
-              </>
+              </button>
             )}
           </div>
         </div>
